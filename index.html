@@ -273,7 +273,7 @@ tbody tr:hover{background:var(--bg);}
     <h3>Nova ordem de serviço</h3>
     <div id="nw" class="wb" style="display:none">Sem permissão.</div>
     <div class="mf"><label>Número da OS</label><input id="fo" placeholder="Ex: OS-0001"/></div>
-    <div class="mf"><label>Número do pedido</label><input id="fp" placeholder="Ex: PED-001"/></div>
+    <div class="mf" id="fp-wrap"><label>Número do pedido</label><input id="fp" placeholder="Ex: PED-001"/></div>
     <div class="mf"><label>Data da venda <span style="color:var(--re)">*</span></label><input id="fdt" type="date"/></div>
     <div class="mf"><label>Tipo de serviço</label>
       <select id="ft" onchange="tgG(this.value)">
@@ -451,7 +451,7 @@ function fG(e,c){if(e==null)return'—';const ev=(e>0?'+':'')+Number(e).toFixed(
 function eK(e,c){return`${Number(e).toFixed(2)}_${Number(c).toFixed(2)}`;}
 function tGL(t){const m={venda:'Venda — Pedido',hora:'Venda — Hora','gar-hora':'Gar. Hora','gar-armacao':'Gar. Armação','gar-estoque':'Gar. Estoque','gar-pedido':'Gar. Pedido',passagem:'Passagem'};return m[t]||t;}
 function tGC(t){if(t==='venda')return'bv';if(t==='passagem')return'bps';if(t&&t.startsWith('gar'))return'bgr';return'bhr';}
-function tgG(v){document.getElementById('gg').style.display=COM_GRAU.includes(v)?'grid':'none';}
+function tgG(v){document.getElementById('gg').style.display=COM_GRAU.includes(v)?'grid':'none';const fpw=document.getElementById('fp-wrap');if(fpw)fpw.style.display=v==='passagem'?'none':'block';if(v==='passagem'){document.getElementById('fp').value='PASSAGEM';document.getElementById('fp').required=false;}else{if(document.getElementById('fp').value==='PASSAGEM')document.getElementById('fp').value='';document.getElementById('fp').required=true;}}
 
 // ── BUSCA ─────────────────────────────────────────
 function onSrch(v){srch=v.trim().toLowerCase();document.getElementById('sc').className='sc'+(srch?' show':'');rnKan();}
@@ -501,7 +501,7 @@ function opOs(){
   document.getElementById('nw').style.display=R&&R.ca?'none':'block';
   ['fo','fp','fod','foe','fcd','fce'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fdt').value=new Date().toISOString().split('T')[0];
-  document.getElementById('ft').value='venda';tgG('venda');
+  document.getElementById('ft').value='venda';tgG('venda');document.getElementById('fp-wrap').style.display='block';
   document.getElementById('om').style.display='flex';
 }
 function clsOs(){document.getElementById('om').style.display='none';}
