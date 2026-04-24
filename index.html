@@ -235,8 +235,8 @@ tbody tr:hover{background:var(--bg);}
     </div>
     <div class="rsum">
       <div class="rs2"><div class="rl">Total montagens</div><div class="rv v" id="r0">0</div></div>
-      <div class="rs2"><div class="rl">Venda</div><div class="rv i" id="r1">0</div></div>
-      <div class="rs2"><div class="rl">Garantia/Hora</div><div class="rv w" id="r2">0</div></div>
+      <div class="rs2"><div class="rl">Vendas lançadas</div><div class="rv i" id="r1">0</div></div>
+      <div class="rs2"><div class="rl">Garantias lançadas</div><div class="rv w" id="r2">0</div></div>
       <div class="rs2"><div class="rl">Responsáveis</div><div class="rv" id="r3">0</div></div>
     </div>
     <div class="tw">
@@ -535,7 +535,9 @@ async function svOS(){
   const prazo=document.getElementById('fprazo').value;
   const urgente=document.getElementById('furgente').checked;
   const c={id:'os_'+now,os,ped,tipo,dtVenda,prazo,urgente,esfOD,esfOE,cilOD,cilOE,col:0,ts:now,tsCreated:now,history:[]};
-  c.history.push({u:U.n,r:U.r,from:-1,to:0,at:now,mc:false});
+  const isVenda=tipo==='venda'||tipo==='hora';
+  const isGar=tipo&&tipo.startsWith('gar');
+  c.history.push({u:U.n,r:U.r,from:-1,to:0,at:now,mc:false,venda:isVenda,garantia:isGar});
   ST.cards.unshift(c);clsOs();rnKan();
   await saveCard(c);
 }
@@ -598,15 +600,26 @@ function rnRel(){
   const lbs={h:'Montagens de hoje',s:'Montagens desta semana',m:'Montagens deste mês',c:'Período personalizado'};
   document.getElementById('rtt').textContent=lbs[per];
   relR=[];
-  ST.cards.forEach(c=>{(c.history||[]).forEach(h=>{if(h.mc){const d=new Date(h.at);if(d>=ini&&d<=fim)relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at});}});});
+  ST.cards.forEach(c=>{
+    (c.history||[]).forEach(h=>{
+      const d=new Date(h.at);
+      if(d>=ini&&d<=fim){
+        if(h.mc) relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at,ev:'montagem'});
+        if(h.venda) relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at,ev:'venda'});
+        if(h.garantia) relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at,ev:'garantia'});
+      }
+    });
+  });
   relR.sort((a,b)=>b.at-a.at);
-  document.getElementById('r0').textContent=relR.length;
-  document.getElementById('r1').textContent=relR.filter(r=>r.tipo==='venda'||r.tipo==='hora').length;
-  document.getElementById('r2').textContent=relR.filter(r=>r.tipo&&(r.tipo.startsWith('gar')||r.tipo==='gar-hora')).length;
+  document.getElementById('r0').textContent=relR.filter(r=>r.ev==='montagem').length;
+  document.getElementById('r1').textContent=relR.filter(r=>r.ev==='venda').length;
+  document.getElementById('r2').textContent=relR.filter(r=>r.ev==='garantia').length;
   document.getElementById('r3').textContent=new Set(relR.map(r=>r.u)).size;
   const b=document.getElementById('rb2');
   if(!relR.length){b.innerHTML='<div class="er">Nenhuma montagem neste período.</div>';return;}
-  b.innerHTML=`<table><thead><tr><th>#</th><th>OS</th><th>Pedido</th><th>Tipo</th><th>Responsável</th><th>Perfil</th><th>Data</th></tr></thead><tbody>${relR.map((r,i)=>{const rl=r.r&&RS[r.r]?RS[r.r].l:r.r||'—';return`<tr><td style="color:var(--mu);font-size:11px">${i+1}</td><td style="font-weight:600">${r.os}</td><td>${r.ped}</td><td><span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500" class="${tGC(r.tipo)}">${tGL(r.tipo)}</span></td><td style="color:var(--mu)">${r.u}</td><td><span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500;background:#E0F7F6;color:#0D7A75">${rl}</span></td><td style="color:var(--mu);white-space:nowrap">${fd(r.at)}</td></tr>`;}).join('')}</tbody></table>`;
+  const evLabel={montagem:'🔧 Montagem',venda:'🛒 Venda',garantia:'🔄 Garantia'};
+  const evColor={montagem:'background:#E0F7F6;color:#0D7A75',venda:'background:#D1FAE5;color:#065F46',garantia:'background:#FEF0E6;color:#C05E0A'};
+  b.innerHTML=`<table><thead><tr><th>#</th><th>Evento</th><th>OS</th><th>Pedido</th><th>Tipo</th><th>Responsável</th><th>Data</th></tr></thead><tbody>${relR.map((r,i)=>{return`<tr><td style="color:var(--mu);font-size:11px">${i+1}</td><td><span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;${evColor[r.ev]||''}">${evLabel[r.ev]||r.ev}</span></td><td style="font-weight:600">${r.os}</td><td>${r.ped||'—'}</td><td><span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500" class="${tGC(r.tipo)}">${tGL(r.tipo)}</span></td><td style="color:var(--mu)">${r.u}</td><td style="color:var(--mu);white-space:nowrap">${fd(r.at)}</td></tr>`;}).join('')}</tbody></table>`;
 }
 function expCSV(){
   if(!relR.length){alert('Nenhum dado.');return;}
