@@ -213,7 +213,7 @@ tbody tr:hover{background:var(--bg);}
       <div class="li"><div class="ld" style="background:#F59E0B"></div>Entre 24h e 48h</div>
       <div class="li"><div class="ld" style="background:#16A34A"></div>Dentro do prazo</div>
     </div>
-    <div class="bd" id="bd"></div>
+    <button class="add" id="btn-nova-os" style="max-width:200px;margin-bottom:.75rem;border-style:solid;background:var(--v);color:#fff;border-color:var(--v);font-weight:600;font-size:13px;padding:9px 18px;border-radius:9px" onclick="opOs()">+ Nova OS</button><div class="bd" id="bd"></div>
   </div>
 
   <div id="rs" class="rm">
@@ -329,11 +329,11 @@ const US=[
 ];
 const RS={
   supervisor:{l:'Supervisor',c:'rb-s',se:[0,1,2,3,4,5],mv:[0,1,2,3,4],ca:true,cd:true,ce:true},
-  adm:{l:'Administrador',c:'rb-a',se:[0,1,2,3,4,5],mv:[0,1,4],ca:true,cd:false,ce:true},
-  montagem:{l:'Montagem',c:'rb-m',se:[2,3],mv:[2,3],ca:false,cd:false,ce:false},
+  adm:{l:'Administrador',c:'rb-a',se:[0,1,2,3,4,5],mv:[0,4],ca:true,cd:false,ce:true},
+  montagem:{l:'Montagem',c:'rb-m',se:[1,2,3],mv:[1,2,3],ca:false,cd:false,ce:false},
 };
-const CF=['Pedido','Aguardando lentes','Aguardando montagem','Em montagem','Avisado','Entregue'];
-const CS=['Pedido','Ag. lentes','Ag. montagem','Em montagem','Avisado','Entregue'];
+const CF=['Pedido','Aguardando montagem','Em montagem','Pronto','Avisado','Entregue'];
+const CS=['Pedido','Ag. montagem','Em montagem','Pronto','Avisado','Entregue'];
 const COM_GRAU=['hora','gar-hora','gar-estoque'];
 const COM_BAIXA=['hora','gar-hora','gar-estoque'];
 
@@ -368,7 +368,7 @@ async function loadData(){
       ST={cards:[],estoque:ESTINIT};
     } else {
       const rawCards=data.cards||{};
-      ST.cards=Object.values(rawCards).sort((a,b)=>b.ts-a.ts);
+      ST.cards=Object.values(rawCards).sort((a,b)=>(b.tsCreated||b.ts)-(a.tsCreated||a.ts));
       ST.estoque=data.estoque&&Object.keys(data.estoque).length>0?data.estoque:ESTINIT;
     }
     setSy('ok','Sincronizado — '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
@@ -416,7 +416,7 @@ function doLogin(){
   document.getElementById('av').textContent=U.n.charAt(0).toUpperCase();
   document.getElementById('nn').textContent=U.n;
   const rb=document.getElementById('nr');rb.textContent=R.l;rb.className='rb '+R.c;
-  const msgs={supervisor:'Supervisor — acesso total.',adm:'Administrador — cria OS e movimenta Pedido, Ag. lentes e Avisado.',montagem:'Montagem — acesso a Ag. montagem e Em montagem.'};
+  const msgs={supervisor:'Supervisor — acesso total.',adm:'Administrador — cria OS e movimenta Pedido e Avisado.',montagem:'Montagem — acesso a Ag. montagem e Em montagem.'};
   const b=document.getElementById('ab');b.textContent=msgs[U.r];b.className='ab '+U.r;
   document.getElementById('t-e').style.display=U.r==='supervisor'?'block':'none';
   loadData();
@@ -461,12 +461,12 @@ function clrSrch(){srch='';document.getElementById('si').value='';document.getEl
 async function mvCard(id){
   const c=ST.cards.find(x=>x.id===id);if(!c||c.col>=5)return;
   if(!R.mv.includes(c.col)){alert('Sem permissão para mover desta coluna.');return;}
-  if(c.col===1&&COM_GRAU.includes(c.tipo)&&(c.esfOD==null||c.esfOE==null)){
+  if(c.col===0&&COM_GRAU.includes(c.tipo)&&(c.esfOD==null||c.esfOE==null)){
     alert('Preencha o grau (OD e OE) antes de mover para Ag. montagem.');return;
   }
   const from=c.col;c.col=from+1;c.ts=Date.now();
   if(!c.history)c.history=[];
-  const mc=from===1&&COM_BAIXA.includes(c.tipo);
+  const mc=from===0&&COM_BAIXA.includes(c.tipo);
   c.history.push({u:U.n,r:U.r,from,to:c.col,at:Date.now(),mc});
   if(mc&&c.esfOD!=null){
     [[c.esfOD,c.cilOD||0],[c.esfOE,c.cilOE||0]].forEach(([e,cl])=>{
@@ -515,8 +515,9 @@ async function svOS(){
   const esfOE=parseFloat(document.getElementById('foe').value)||null;
   const cilOD=parseFloat(document.getElementById('fcd').value)||null;
   const cilOE=parseFloat(document.getElementById('fce').value)||null;
-  const c={id:'os_'+Date.now(),os,ped,tipo,esfOD,esfOE,cilOD,cilOE,col:0,ts:Date.now(),history:[]};
-  c.history.push({u:U.n,r:U.r,from:-1,to:0,at:Date.now(),mc:false});
+  const now=Date.now();
+  const c={id:'os_'+now,os,ped,tipo,esfOD,esfOE,cilOD,cilOE,col:0,ts:now,tsCreated:now,history:[]};
+  c.history.push({u:U.n,r:U.r,from:-1,to:0,at:now,mc:false});
   ST.cards.unshift(c);clsOs();rnKan();
   await saveCard(c);
 }
@@ -525,6 +526,7 @@ async function svOS(){
 function rnKan(){
   if(!U||!R)return;
   const board=document.getElementById('bd');board.innerHTML='';
+  const btnNova=document.getElementById('btn-nova-os');if(btnNova)btnNova.style.display=R.ca?'block':'none';
   let t=0,al=0,en=0,mh=0;
   ST.cards.forEach(c=>{(c.history||[]).forEach(h=>{if(h.mc&&itd(h.at))mh++;});});
   const mi=new Set();
@@ -552,7 +554,7 @@ function rnKan(){
       div.innerHTML=`<div class="cos">${hl(c.os,srch)}</div><div class="cp">${hl(c.ped,srch)}</div>${c.esfOD!=null?`<div class="cg">OD ${fG(c.esfOD,c.cilOD)} · OE ${fG(c.esfOE,c.cilOE)}</div>`:''}<div class="cm"><span class="bg2 ${tGC(c.tipo)}">${tGL(c.tipo)}</span><span class="tm ${tc}">${ft(h)}</span></div><div class="cu">por ${lu}</div><div class="cac"><button class="bn" ${!cm||ci===5?'disabled':''} onclick="mvCard('${c.id}')">${ci<5?nl:'Concluído'}</button><button class="bh" onclick="opH('${c.id}')">&#9776;</button>${R.cd?`<button class="bde" onclick="dlCard('${c.id}')">&#10005;</button>`:''}</div>`;
       col.appendChild(div);
     });
-    if(ci===0&&R.ca){const btn=document.createElement('button');btn.className='add';btn.textContent='+ nova OS';btn.onclick=opOs;col.appendChild(btn);}
+
     board.appendChild(col);
   });
   document.getElementById('s0').textContent=t;document.getElementById('s1').textContent=al;
