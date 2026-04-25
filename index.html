@@ -227,7 +227,6 @@ tbody tr:hover{background:var(--bg);}
           <button class="pb" id="ps" onclick="setPer('s')">Esta semana</button>
           <button class="pb" id="pm" onclick="setPer('m')">Este mês</button>
           <button class="pb" id="pc" onclick="setPer('c')">Personalizado</button>
-          <button class="pb" id="pfhora" onclick="setPer('fhora')">⏱ Hora</button>
           <button class="pb" id="pfpass" onclick="setPer('fpass')">🔄 Passagem</button>
           <button class="pb" id="pfgar" onclick="setPer('fgar')">🛡 Garantia</button>
         </div>
@@ -243,7 +242,6 @@ tbody tr:hover{background:var(--bg);}
       <div class="rs2"><div class="rl">Venda Pedido</div><div class="rv i" id="r1">0</div></div>
       <div class="rs2"><div class="rl">Venda Hora</div><div class="rv" style="color:var(--vc)" id="r1h">0</div></div>
       <div class="rs2"><div class="rl">Garantias lançadas</div><div class="rv w" id="r2">0</div></div>
-      <div class="rs2"><div class="rl">Pedidos Hora</div><div class="rv" id="r3">0</div></div>
       <div class="rs2"><div class="rl">Passagens</div><div class="rv" style="color:#5B21B6" id="r4">0</div></div>
     </div>
     <div class="tw">
@@ -744,34 +742,31 @@ function rnRel(){
   const lbs={h:'Montagens de hoje',s:'Montagens desta semana',m:'Montagens deste mês',c:'Período personalizado',fhora:'Pedidos Hora — todos',fpass:'Passagens — todas',fgar:'Garantias — todas'};
   document.getElementById('rtt').textContent=lbs[per];
   relR=[];
-  let vendaCount=0,horaCount=0;
+  let vendaPedidoCount=0,vendaHoraCount=0,garCount=0,passagemCount=0;
   ST.cards.forEach(c=>{
     (c.history||[]).forEach(h=>{
       const d=new Date(h.at);
-      // Para vendas usa a dtVenda do card se disponível
-      const dVenda=h.venda&&c.dtVenda?new Date(c.dtVenda+'T12:00:00'):d;
       if(d>=ini&&d<=fim){
-        // Conta vendas pela data da venda
-        if(h.venda&&dVenda>=ini&&dVenda<=fim){vendaCount++;if(c.tipo==='hora'||c.tipo==='gar-hora')horaCount++;}
-        else if(h.venda&&!(dVenda>=ini&&dVenda<=fim)){}
-        // Só entra na tabela quando passou por Em montagem → Pronto
-        if(h.mc) relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at,ev:'montagem'});
-      } else if(h.venda&&dVenda>=ini&&dVenda<=fim){
-        // Venda com dtVenda no período mas lançamento fora
-        vendaCount++;if(c.tipo==='hora'||c.tipo==='gar-hora')horaCount++;
+        // Tudo conta só quando passa para Pronto (mc=true)
+        if(h.mc){
+          if(c.tipo==='venda') vendaPedidoCount++;
+          else if(c.tipo==='hora') vendaHoraCount++;
+          else if(c.tipo&&c.tipo.startsWith('gar')) garCount++;
+          else if(c.tipo==='passagem') passagemCount++;
+          relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at,ev:'montagem'});
+        }
       }
     });
   });
   if(per==='fhora') relR=relR.filter(r=>r.tipo==='hora'||r.tipo==='gar-hora');
-  if(per==='fpass') relR=relR.filter(r=>r.ev==='passagem');
-  if(per==='fgar') relR=relR.filter(r=>r.ev==='garantia');
+  if(per==='fpass') relR=relR.filter(r=>r.tipo==='passagem');
+  if(per==='fgar') relR=relR.filter(r=>r.tipo&&r.tipo.startsWith('gar'));
   relR.sort((a,b)=>b.at-a.at);
-  document.getElementById('r0').textContent=relR.filter(r=>r.ev==='montagem').length;
-  document.getElementById('r1').textContent=vendaCount-horaCount;
-  const r1hEl=document.getElementById('r1h');if(r1hEl)r1hEl.textContent=horaCount;
-  document.getElementById('r2').textContent=relR.filter(r=>r.ev==='garantia').length;
-  document.getElementById('r3').textContent=horaCount;
-  document.getElementById('r4').textContent=relR.filter(r=>r.ev==='passagem').length;
+  document.getElementById('r0').textContent=relR.length;
+  document.getElementById('r1').textContent=vendaPedidoCount;
+  const r1hEl=document.getElementById('r1h');if(r1hEl)r1hEl.textContent=vendaHoraCount;
+  document.getElementById('r2').textContent=garCount;
+  document.getElementById('r4').textContent=passagemCount;
   const b=document.getElementById('rb2');
   if(!relR.length){b.innerHTML='<div class="er">Nenhuma montagem neste período.</div>';return;}
   const evLabel={montagem:'🔧 Montagem',venda:'🛒 Venda',garantia:'🔄 Garantia',passagem:'🔁 Passagem'};
