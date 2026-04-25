@@ -227,6 +227,9 @@ tbody tr:hover{background:var(--bg);}
           <button class="pb" id="ps" onclick="setPer('s')">Esta semana</button>
           <button class="pb" id="pm" onclick="setPer('m')">Este mês</button>
           <button class="pb" id="pc" onclick="setPer('c')">Personalizado</button>
+          <button class="pb" id="pfhora" onclick="setPer('fhora')">⏱ Hora</button>
+          <button class="pb" id="pfpass" onclick="setPer('fpass')">🔄 Passagem</button>
+          <button class="pb" id="pfgar" onclick="setPer('fgar')">🛡 Garantia</button>
         </div>
         <div class="cd" id="cd">
           <label style="font-size:12px;color:var(--mu)">De</label><input type="date" id="di"/>
@@ -239,7 +242,8 @@ tbody tr:hover{background:var(--bg);}
       <div class="rs2"><div class="rl">Total montagens</div><div class="rv v" id="r0">0</div></div>
       <div class="rs2"><div class="rl">Vendas lançadas</div><div class="rv i" id="r1">0</div></div>
       <div class="rs2"><div class="rl">Garantias lançadas</div><div class="rv w" id="r2">0</div></div>
-      <div class="rs2"><div class="rl">Responsáveis</div><div class="rv" id="r3">0</div></div>
+      <div class="rs2"><div class="rl">Pedidos Hora</div><div class="rv" id="r3">0</div></div>
+      <div class="rs2"><div class="rl">Passagens</div><div class="rv" style="color:#5B21B6" id="r4">0</div></div>
     </div>
     <div class="tw">
       <div class="th2"><span class="tt" id="rtt">Montagens de hoje</span><button class="bex" onclick="expCSV()">Exportar CSV</button></div>
@@ -521,9 +525,11 @@ async function mvCard(id){
   }
   const from=c.col;c.col=from+1;c.ts=Date.now();
   if(!c.history)c.history=[];
-  const mc=from===2;
+  const mc=from===2&&c.tipo!=='passagem';
+  const isGarMc=from===2&&c.tipo&&c.tipo.startsWith('gar');
+  const isPassagem=from===2&&c.tipo==='passagem';
   const baixa=from===0&&COM_BAIXA.includes(c.tipo);
-  c.history.push({u:U.n,r:U.r,from,to:c.col,at:Date.now(),mc});
+  c.history.push({u:U.n,r:U.r,from,to:c.col,at:Date.now(),mc,garantia:isGarMc,passagem:isPassagem});
   if(baixa&&c.esfOD!=null){
     [[c.esfOD,c.cilOD||0],[c.esfOE,c.cilOE||0]].forEach(([e,cl])=>{
       if(e==null)return;
@@ -590,8 +596,7 @@ async function svOS(){
   const urgente=document.getElementById('furgente').checked;
   const c={id:'os_'+now,os,ped,tipo,dtVenda,prazo,urgente,obs,esfOD:esfODv,esfOE:esfOEv,cilOD:cilODv,cilOE:cilOEv,col:0,ts:now,tsCreated:now,history:[]};
   const isVenda=tipo==='venda'||tipo==='hora';
-  const isGar=tipo&&tipo.startsWith('gar');
-  c.history.push({u:U.n,r:U.r,from:-1,to:0,at:now,mc:false,venda:isVenda,garantia:isGar});
+  c.history.push({u:U.n,r:U.r,from:-1,to:0,at:now,mc:false,venda:isVenda,garantia:false});
   ST.cards.unshift(c);clsOs();rnKan();
   await saveCard(c);
 }
@@ -683,7 +688,8 @@ function expGarCSV(){
 }
 
 function setPer(p){
-  per=p;['h','s','m','c'].forEach(x=>document.getElementById('p'+x).className='pb'+(p===x?' active':''));
+  per=p;
+  ['h','s','m','c','fhora','fpass','fgar'].forEach(x=>{const el=document.getElementById('p'+x);if(el)el.className='pb'+(p===x?' active':'');});
   document.getElementById('cd').style.display=p==='c'?'flex':'none';
   if(p!=='c')rnRel();
 }
@@ -692,33 +698,39 @@ function getRange(){
   if(per==='h'){ini=new Date(n.getFullYear(),n.getMonth(),n.getDate(),0,0,0);fim=new Date(n.getFullYear(),n.getMonth(),n.getDate(),23,59,59);}
   else if(per==='s'){const dw=n.getDay();ini=new Date(n);ini.setDate(n.getDate()-dw);ini.setHours(0,0,0,0);fim=new Date(ini);fim.setDate(ini.getDate()+6);fim.setHours(23,59,59);}
   else if(per==='m'){ini=new Date(n.getFullYear(),n.getMonth(),1,0,0,0);fim=new Date(n.getFullYear(),n.getMonth()+1,0,23,59,59);}
+  else if(per==='fhora'||per==='fpass'||per==='fgar'){ini=new Date(0);fim=new Date(9999,0,1);}
   else{const vi=document.getElementById('di').value;const vf=document.getElementById('df').value;ini=vi?new Date(vi+'T00:00:00'):new Date(0);fim=vf?new Date(vf+'T23:59:59'):new Date();}
   return{ini,fim};
 }
 function rnRel(){
   const{ini,fim}=getRange();
-  const lbs={h:'Montagens de hoje',s:'Montagens desta semana',m:'Montagens deste mês',c:'Período personalizado'};
+  const lbs={h:'Montagens de hoje',s:'Montagens desta semana',m:'Montagens deste mês',c:'Período personalizado',fhora:'Pedidos Hora — todos',fpass:'Passagens — todas',fgar:'Garantias — todas'};
   document.getElementById('rtt').textContent=lbs[per];
   relR=[];
   ST.cards.forEach(c=>{
     (c.history||[]).forEach(h=>{
       const d=new Date(h.at);
       if(d>=ini&&d<=fim){
-        if(h.mc) relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at,ev:'montagem'});
+        if(h.mc&&!h.garantia) relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at,ev:'montagem'});
         if(h.venda) relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at,ev:'venda'});
         if(h.garantia) relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at,ev:'garantia'});
+        if(h.passagem) relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at,ev:'passagem'});
       }
     });
   });
+  if(per==='fhora') relR=relR.filter(r=>r.tipo==='hora'||r.tipo==='gar-hora');
+  if(per==='fpass') relR=relR.filter(r=>r.ev==='passagem');
+  if(per==='fgar') relR=relR.filter(r=>r.ev==='garantia');
   relR.sort((a,b)=>b.at-a.at);
   document.getElementById('r0').textContent=relR.filter(r=>r.ev==='montagem').length;
   document.getElementById('r1').textContent=relR.filter(r=>r.ev==='venda').length;
   document.getElementById('r2').textContent=relR.filter(r=>r.ev==='garantia').length;
-  document.getElementById('r3').textContent=new Set(relR.map(r=>r.u)).size;
+  document.getElementById('r3').textContent=relR.filter(r=>r.tipo==='hora'||r.tipo==='gar-hora').length;
+  document.getElementById('r4').textContent=relR.filter(r=>r.ev==='passagem').length;
   const b=document.getElementById('rb2');
   if(!relR.length){b.innerHTML='<div class="er">Nenhuma montagem neste período.</div>';return;}
-  const evLabel={montagem:'🔧 Montagem',venda:'🛒 Venda',garantia:'🔄 Garantia'};
-  const evColor={montagem:'background:#E0F7F6;color:#0D7A75',venda:'background:#D1FAE5;color:#065F46',garantia:'background:#FEF0E6;color:#C05E0A'};
+  const evLabel={montagem:'🔧 Montagem',venda:'🛒 Venda',garantia:'🔄 Garantia',passagem:'🔁 Passagem'};
+  const evColor={montagem:'background:#E0F7F6;color:#0D7A75',venda:'background:#D1FAE5;color:#065F46',garantia:'background:#FEF0E6;color:#C05E0A',passagem:'background:#EDE9FE;color:#5B21B6'};
   b.innerHTML=`<table><thead><tr><th>#</th><th>Evento</th><th>OS</th><th>Pedido</th><th>Tipo</th><th>Responsável</th><th>Data</th></tr></thead><tbody>${relR.map((r,i)=>{return`<tr><td style="color:var(--mu);font-size:11px">${i+1}</td><td><span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;${evColor[r.ev]||''}">${evLabel[r.ev]||r.ev}</span></td><td style="font-weight:600">${r.os}</td><td>${r.ped||'—'}</td><td><span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500" class="${tGC(r.tipo)}">${tGL(r.tipo)}</span></td><td style="color:var(--mu)">${r.u}</td><td style="color:var(--mu);white-space:nowrap">${fd(r.at)}</td></tr>`;}).join('')}</tbody></table>`;
 }
 function expCSV(){
