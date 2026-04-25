@@ -171,7 +171,7 @@ tbody tr:hover{background:var(--bg);}
     <div class="lf"><label>Usuário</label><input type="text" id="lu" placeholder="Seu usuário" autocomplete="off"/></div>
     <div class="lf"><label>Senha</label><input type="password" id="lp" placeholder="••••••••"/><div class="em" id="em">Usuário ou senha incorretos.</div></div>
     <button class="bl" onclick="doLogin()">Entrar</button>
-    <p class="lft">Óticas Idealize Piracicaba &copy; 2025</p>
+    <p class="lft">Óticas Idealize São Vicente &copy; 2025</p>
   </div>
 </div>
 
@@ -181,7 +181,7 @@ tbody tr:hover{background:var(--bg);}
     <div class="nb-r">
       <div class="tabs">
         <button class="tab active" id="t-k" onclick="sw('k')">Serviços</button>
-        <button class="tab" id="t-r" onclick="sw('r')">Relatório</button>
+        <button class="tab" id="t-r" onclick="sw('r')">Montagem</button>
         <button class="tab" id="t-g" onclick="sw('g')">Garantias</button>
         <button class="tab" id="t-e" onclick="sw('e')" style="display:none">Estoque</button>
       </div>
@@ -205,6 +205,7 @@ tbody tr:hover{background:var(--bg);}
         <input type="text" id="si" placeholder="Buscar OS ou pedido..." oninput="onSrch(this.value)" autocomplete="off"/>
         <button class="sc" id="sc" onclick="clrSrch()">&#10005;</button>
       </div>
+      <button id="btn-urg" onclick="tgFiltroUrg()" style="font-size:12px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--re);background:none;color:var(--re);cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">🚨 Urgentes</button>
     </div>
     <div class="srb" id="srb"><span id="srt"></span><button onclick="clrSrch()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--in);font-family:inherit">Limpar</button></div>
     <div class="sy"><div class="sd" id="sd"></div><span id="sx">Conectando...</span></div>
@@ -377,7 +378,7 @@ const CS=['Pedido','Ag. montagem','Em montagem','Pronto','Avisado','Entregue'];
 const COM_GRAU=['hora','gar-hora','gar-estoque'];
 const COM_BAIXA=['hora','gar-hora','gar-estoque'];
 
-let U=null,R=null,ST={cards:[],estoque:{}},srch='',per='h',relR=[];
+let U=null,R=null,ST={cards:[],estoque:{}},srch='',per='h',relR=[],filtroUrg=false;
 
 // ── FIREBASE REST API ──────────────────────────────
 async function fbGet(path){
@@ -500,7 +501,15 @@ function tgUrgente(checked){
 function tgG(v){document.getElementById('gg').style.display=COM_GRAU.includes(v)?'grid':'none';const obsWrap=document.getElementById('obs-wrap');if(obsWrap)obsWrap.style.display=v&&v.startsWith('gar')?'block':'none';const semPed=['passagem','gar-hora','gar-armacao','hora'];const fpw=document.getElementById('fp-wrap');if(fpw)fpw.style.display=semPed.includes(v)?'none':'block';if(semPed.includes(v)){document.getElementById('fp').value=v.toUpperCase();}else{const cur=document.getElementById('fp').value;if(['PASSAGEM','GAR-HORA','GAR-ARMACAO','HORA'].includes(cur))document.getElementById('fp').value='';}}
 
 // ── BUSCA ─────────────────────────────────────────
-function onSrch(v){srch=v.trim().toLowerCase();document.getElementById('sc').className='sc'+(srch?' show':'');rnKan();}
+function tgFiltroUrg(){
+  filtroUrg=!filtroUrg;
+  const btn=document.getElementById('btn-urg');
+  if(filtroUrg){btn.style.background='var(--re)';btn.style.color='#fff';}
+  else{btn.style.background='none';btn.style.color='var(--re)';}
+  rnKan();
+  if(filtroUrg)window.scrollTo({top:0,behavior:'smooth'});
+}
+function onSrch(v){srch=v.trim().toLowerCase();document.getElementById('sc').className='sc'+(srch?' show':'');rnKan();if(srch)window.scrollTo({top:0,behavior:'smooth'});}
 function clrSrch(){srch='';document.getElementById('si').value='';document.getElementById('sc').className='sc';rnKan();}
 
 // ── OS ────────────────────────────────────────────
@@ -614,7 +623,8 @@ function rnKan(){
       const lu=lh?lh.u:'—';
       const cm=R.mv.includes(ci)&&ci<5;
       const nl=ci<5?'→ '+CS[ci+1]:'Concluído';
-      let ex='';if(srch){ex=mi.has(c.id)?' hi':' di';}
+      if(filtroUrg&&!c.urgente)return;
+      let ex='';if(srch){if(!mi.has(c.id)){return;}ex=' hi';}
       const div=document.createElement('div');div.className='ca'+(ccl?' '+ccl:'')+(c.urgente?' urg':'')+ex;
       div.innerHTML=`<div class="cos">${hl(c.os,srch)}</div><div class="cp">${hl(c.ped,srch)}</div>${c.dtVenda?`<div class="cg" style="color:var(--v);font-weight:500">📅 Venda: ${c.dtVenda.split('-').reverse().join('/')}</div>`:''}${c.prazo?`<div class="cg" style="color:${c.urgente?'#DC2626':'var(--mu)'};font-weight:${c.urgente?'700':'500'}">⏰${c.urgente?' 🚨 URGENTE':''} Entrega: ${c.prazo.split('-').reverse().join('/')}</div>`:''}${c.obs?`<div class="cg" style="color:var(--wa);font-style:italic">📝 ${c.obs}</div>`:''}${c.esfOD!=null?`<div class="cg">OD ${fG(c.esfOD,c.cilOD)} · OE ${fG(c.esfOE,c.cilOE)}</div>`:''}<div class="cm"><span class="bg2 ${tGC(c.tipo)}">${tGL(c.tipo)}</span><span class="tm ${tc}">${ft(h)}</span></div><div class="cu">por ${lu}</div><div class="cac"><button class="bn" ${!cm||ci===5?'disabled':''} onclick="mvCard('${c.id}')">${ci<5?nl:'Concluído'}</button><button class="bh" onclick="opH('${c.id}')">&#9776;</button>${R.cd?`<button class="bde" onclick="dlCard('${c.id}')">&#10005;</button>`:''}</div>`;
       col.appendChild(div);
