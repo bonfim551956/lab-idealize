@@ -218,7 +218,7 @@ tbody tr:hover{background:var(--bg);}
     <button class="add" id="btn-nova-os" style="max-width:200px;margin-bottom:.75rem;border-style:solid;background:var(--v);color:#fff;border-color:var(--v);font-weight:600;font-size:13px;padding:9px 18px;border-radius:9px" onclick="opOs()">+ Nova OS</button><div class="bd" id="bd"></div>
   </div>
 
-  <div id="rs" class="rm">
+  <div id="rs" class="rm" style="display:none">
     <div class="rh">
       <span class="rt">Relatório de Montagens</span>
       <div>
@@ -279,7 +279,7 @@ tbody tr:hover{background:var(--bg);}
     </div>
   </div>
 
-  <div id="es" class="rm">
+  <div id="es" class="rm" style="display:none">
     <div class="rh"><span class="rt">Estoque de Lentes</span><div id="ea"></div></div>
     <div id="rep-body" style="padding:.75rem 1rem;"></div>
     </div>
@@ -655,7 +655,7 @@ function rnKan(){
       if(ci!==5){if(h>=48){tc='tal';ccl='al';}else if(h>=24){tc='twn';ccl='wn';}}
       const lh=c.history&&c.history.length?c.history[c.history.length-1]:null;
       const lu=lh?lh.u:'—';
-      const cm=R.mv.includes(ci)&&ci<5;
+      const cm=R.mv.includes(ci)&&ci<5&&R.mv.includes(ci+1);
       const nl=ci<5?'→ '+CS[ci+1]:'Concluído';
       if(filtroUrg&&!c.urgente)return;
       let ex='';if(srch){if(!mi.has(c.id)){return;}ex=' hi';}
