@@ -478,7 +478,7 @@ function sw(tab){
     if(el)el.style.display=tab===t?(t==='k'?'block':'flex'):'none';
   });
   if(tab==='r')rnRel();
-  if(tab==='g')rnGar();
+  if(tab==='g'){document.getElementById('gs').style.display='flex';document.getElementById('gs').style.flexDirection='column';rnGar();}
   if(tab==='e')rnEst();
 }
 
