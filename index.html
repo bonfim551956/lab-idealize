@@ -396,7 +396,7 @@ const US=[
 const RS={
   supervisor:{l:'Supervisor',c:'rb-s',se:[0,1,2,3,4,5],mv:[0,1,2,3,4],ca:true,cd:true,ce:true},
   adm:{l:'Administrador',c:'rb-a',se:[0,1,2,3,4,5],mv:[0,3,4],ca:true,cd:false,ce:true},
-  montagem:{l:'Montagem',c:'rb-m',se:[1,2,3],mv:[1,2],ca:false,cd:false,ce:false},
+  montagem:{l:'Montagem',c:'rb-m',se:[1,2],mv:[1,2],ca:false,cd:false,ce:false},
 };
 const CF=['Pedido','Aguardando montagem','Em montagem','Pronto','Avisado','Entregue'];
 const CS=['Pedido','Ag. montagem','Em montagem','Pronto','Avisado','Entregue'];
@@ -545,6 +545,23 @@ function tgFiltroUrg(){
   rnKan();
   if(filtroUrg)window.scrollTo({top:0,behavior:'smooth'});
 }
+let rfId=null;
+function opRf(id){rfId=id;document.getElementById('frf').value='';document.getElementById('rfm').style.display='flex';}
+function clsRf(){rfId=null;document.getElementById('rfm').style.display='none';}
+async function svRf(){
+  const motivo=document.getElementById('frf').value.trim();
+  if(!motivo){alert('Preencha o motivo do refazer.');return;}
+  const c=ST.cards.find(x=>x.id===rfId);
+  if(!c)return;
+  const prev=c.col;
+  c.col=0;
+  c.refeito=true;
+  c.motivoRefeito=motivo;
+  c.history=c.history||[];
+  c.history.push({u:U.n,r:U.r,from:prev,to:0,at:Date.now(),mc:false,refeito:true,motivoRefeito:motivo});
+  await saveCard(c);
+  clsRf();rnKan();
+}
 function onSrch(v){srch=v.trim().toLowerCase();document.getElementById('sc').className='sc'+(srch?' show':'');rnKan();if(srch)window.scrollTo({top:0,behavior:'smooth'});}
 function clrSrch(){srch='';document.getElementById('si').value='';document.getElementById('sc').className='sc';rnKan();}
 
@@ -670,7 +687,7 @@ function rnKan(){
       if(filtroUrg&&!c.urgente)return;
       let ex='';if(srch){if(!mi.has(c.id)){return;}ex=' hi';}
       const div=document.createElement('div');div.className='ca'+(ccl?' '+ccl:'')+(c.urgente?' urg':'')+ex;
-      div.innerHTML=`<div class="cos">${hl(c.os,srch)}</div><div class="cp">${hl(c.ped,srch)}</div>${c.dtVenda?`<div class="cg" style="color:var(--v);font-weight:500">📅 Venda: ${c.dtVenda.split('-').reverse().join('/')}</div>`:''}${c.prazo?`<div class="cg" style="color:${c.urgente?'#DC2626':'var(--mu)'};font-weight:${c.urgente?'700':'500'}">⏰${c.urgente?' 🚨 URGENTE':''} Entrega: ${c.prazo.split('-').reverse().join('/')}</div>`:''}${c.obs?`<div class="cg" style="color:var(--wa);font-style:italic">📝 ${c.obs}${c.receita?' · '+c.receita:''}</div>`:''}${c.respGar?`<div class="cg" style="color:var(--mu)">👤 Resp: ${c.respGar}</div>`:''}${c.obsTxt?`<div class="cg" style="color:var(--mu);font-style:italic">💬 ${c.obsTxt}</div>`:''}${c.esfOD!=null?`<div class="cg">OD ${fG(c.esfOD,c.cilOD)} · OE ${fG(c.esfOE,c.cilOE)}</div>`:''}<div class="cm"><span class="bg2 ${tGC(c.tipo)}">${tGL(c.tipo)}</span><span class="tm ${tc}">${ft(h)}</span></div><div class="cu">por ${lu}</div><div class="cac"><button class="bn" ${!cm||ci===5?'disabled':''} onclick="mvCard('${c.id}')">${ci<5?nl:'Concluído'}</button><button class="bh" onclick="opH('${c.id}')">&#9776;</button>${R.cd?`<button class="bde" onclick="dlCard('${c.id}')">&#10005;</button>`:''}</div>`;
+      div.innerHTML=`<div class="cos">${hl(c.os,srch)}</div><div class="cp">${hl(c.ped,srch)}</div>${c.refeito?`<div class="cg" style="color:#DC2626;font-weight:700;font-size:11px">🔄 SERVIÇO REFEITO</div>`:''}${c.dtVenda?`<div class="cg" style="color:var(--v);font-weight:500">📅 Venda: ${c.dtVenda.split('-').reverse().join('/')}</div>`:''}${c.prazo?`<div class="cg" style="color:${c.urgente?'#DC2626':'var(--mu)'};font-weight:${c.urgente?'700':'500'}">⏰${c.urgente?' 🚨 URGENTE':''} Entrega: ${c.prazo.split('-').reverse().join('/')}</div>`:''}${c.obs?`<div class="cg" style="color:var(--wa);font-style:italic">📝 ${c.obs}${c.receita?' · '+c.receita:''}</div>`:''}${c.respGar?`<div class="cg" style="color:var(--mu)">👤 Resp: ${c.respGar}</div>`:''}${c.obsTxt?`<div class="cg" style="color:var(--mu);font-style:italic">💬 ${c.obsTxt}</div>`:''}${c.esfOD!=null?`<div class="cg">OD ${fG(c.esfOD,c.cilOD)} · OE ${fG(c.esfOE,c.cilOE)}</div>`:''}<div class="cm"><span class="bg2 ${tGC(c.tipo)}">${tGL(c.tipo)}</span><span class="tm ${tc}">${ft(h)}</span></div><div class="cu">por ${lu}</div><div class="cac"><button class="bn" ${!cm||ci===5?'disabled':''} onclick="mvCard('${c.id}')">${ci<5?nl:'Concluído'}</button><button class="bh" onclick="opH('${c.id}')">&#9776;</button>${(R.cd||R.r==='adm')&&c.col>0?`<button class="bde" style="background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;font-size:11px;padding:4px 8px;border-radius:6px;cursor:pointer" onclick="opRf('${c.id}')">↩ Refazer</button>`:''}${R.cd?`<button class="bde" onclick="dlCard('${c.id}')">&#10005;</button>`:''}</div>`;
       col.appendChild(div);
     });
 
@@ -865,7 +882,7 @@ function expEstCSV(){
   const b=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='estoque.csv';a.click();URL.revokeObjectURL(u);
 }
 
-['om','hm','em2'].forEach(id=>{document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.style.display='none';});});
+['om','hm','em2','rfm'].forEach(id=>{document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.style.display='none';});});
 document.getElementById('si').addEventListener('keydown',e=>{if(e.key==='Escape')clrSrch();});
 setInterval(()=>{if(U)loadData();},30000);
 </script>
