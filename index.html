@@ -525,7 +525,7 @@ async function mvCard(id){
   }
   const from=c.col;c.col=from+1;c.ts=Date.now();
   if(!c.history)c.history=[];
-  const mc=from===2&&c.tipo!=='passagem';
+  const mc=from===2;
   const isGarMc=from===2&&c.tipo&&c.tipo.startsWith('gar');
   const isPassagem=from===2&&c.tipo==='passagem';
   const baixa=from===0&&COM_BAIXA.includes(c.tipo);
@@ -707,14 +707,15 @@ function rnRel(){
   const lbs={h:'Montagens de hoje',s:'Montagens desta semana',m:'Montagens deste mês',c:'Período personalizado',fhora:'Pedidos Hora — todos',fpass:'Passagens — todas',fgar:'Garantias — todas'};
   document.getElementById('rtt').textContent=lbs[per];
   relR=[];
+  let vendaCount=0,horaCount=0;
   ST.cards.forEach(c=>{
     (c.history||[]).forEach(h=>{
       const d=new Date(h.at);
       if(d>=ini&&d<=fim){
-        if(h.mc&&!h.garantia) relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at,ev:'montagem'});
-        if(h.venda) relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at,ev:'venda'});
-        if(h.garantia) relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at,ev:'garantia'});
-        if(h.passagem) relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at,ev:'passagem'});
+        // Conta vendas lançadas (para os cards de resumo)
+        if(h.venda){vendaCount++;if(c.tipo==='hora'||c.tipo==='gar-hora')horaCount++;}
+        // Só entra na tabela quando passou por Em montagem → Pronto
+        if(h.mc) relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at,ev:'montagem'});
       }
     });
   });
@@ -723,9 +724,9 @@ function rnRel(){
   if(per==='fgar') relR=relR.filter(r=>r.ev==='garantia');
   relR.sort((a,b)=>b.at-a.at);
   document.getElementById('r0').textContent=relR.filter(r=>r.ev==='montagem').length;
-  document.getElementById('r1').textContent=relR.filter(r=>r.ev==='venda').length;
+  document.getElementById('r1').textContent=vendaCount;
   document.getElementById('r2').textContent=relR.filter(r=>r.ev==='garantia').length;
-  document.getElementById('r3').textContent=relR.filter(r=>r.tipo==='hora'||r.tipo==='gar-hora').length;
+  document.getElementById('r3').textContent=horaCount;
   document.getElementById('r4').textContent=relR.filter(r=>r.ev==='passagem').length;
   const b=document.getElementById('rb2');
   if(!relR.length){b.innerHTML='<div class="er">Nenhuma montagem neste período.</div>';return;}
