@@ -180,8 +180,9 @@ tbody tr:hover{background:var(--bg);}
     <div class="nb-l"><span class="nt">Óticas Idealize</span></div>
     <div class="nb-r">
       <div class="tabs">
-        <button class="tab active" id="t-k" onclick="sw('k')">Kanban</button>
+        <button class="tab active" id="t-k" onclick="sw('k')">Serviços</button>
         <button class="tab" id="t-r" onclick="sw('r')">Relatório</button>
+        <button class="tab" id="t-g" onclick="sw('g')">Garantias</button>
         <button class="tab" id="t-e" onclick="sw('e')" style="display:none">Estoque</button>
       </div>
       <div class="av" id="av"></div>
@@ -242,6 +243,35 @@ tbody tr:hover{background:var(--bg);}
     <div class="tw">
       <div class="th2"><span class="tt" id="rtt">Montagens de hoje</span><button class="bex" onclick="expCSV()">Exportar CSV</button></div>
       <div id="rb2"><div class="er">Selecione um período.</div></div>
+    </div>
+  </div>
+
+  <div id="gs" class="rm">
+    <div class="rh">
+      <span class="rt">Relatório de Garantias</span>
+      <div>
+        <div class="pb-w">
+          <button class="pb active" id="gph" onclick="setPerG('h')">Hoje</button>
+          <button class="pb" id="gps" onclick="setPerG('s')">Esta semana</button>
+          <button class="pb" id="gpm" onclick="setPerG('m')">Este mês</button>
+          <button class="pb" id="gpc" onclick="setPerG('c')">Personalizado</button>
+        </div>
+        <div class="cd" id="gcd">
+          <label style="font-size:12px;color:var(--mu)">De</label><input type="date" id="gdi"/>
+          <span style="font-size:12px;color:var(--mu)">até</span><input type="date" id="gdf"/>
+          <button class="bf" onclick="rnGar()">Filtrar</button>
+        </div>
+      </div>
+    </div>
+    <div class="rsum">
+      <div class="rs2"><div class="rl">Total garantias</div><div class="rv d" id="g0">0</div></div>
+      <div class="rs2"><div class="rl">Gar. Hora</div><div class="rv w" id="g1">0</div></div>
+      <div class="rs2"><div class="rl">Gar. Armação</div><div class="rv i" id="g2">0</div></div>
+      <div class="rs2"><div class="rl">Gar. Pedido</div><div class="rv" id="g3">0</div></div>
+    </div>
+    <div class="tw">
+      <div class="th2"><span class="tt" id="gtt">Garantias de hoje</span><button class="bex" onclick="expGarCSV()">Exportar CSV</button></div>
+      <div id="gb2"><div class="er">Selecione um período.</div></div>
     </div>
   </div>
 
@@ -441,13 +471,14 @@ function doLogout(){
 
 // ── TABS ──────────────────────────────────────────
 function sw(tab){
-  const map={k:'ks',r:'rs',e:'es'};
-  ['k','r','e'].forEach(t=>{
-    document.getElementById('t-'+t).className='tab'+(tab===t?' active':'');
+  const map={k:'ks',r:'rs',g:'gs',e:'es'};
+  ['k','r','g','e'].forEach(t=>{
+    const tb=document.getElementById('t-'+t);if(tb)tb.className='tab'+(tab===t?' active':'');
     const el=document.getElementById(map[t]);
     if(el)el.style.display=tab===t?(t==='k'?'block':'flex'):'none';
   });
   if(tab==='r')rnRel();
+  if(tab==='g')rnGar();
   if(tab==='e')rnEst();
 }
 
@@ -596,6 +627,51 @@ function rnKan(){
 }
 
 // ── RELATÓRIO ─────────────────────────────────────
+let perG='h', garR=[];
+
+function setPerG(p){
+  perG=p;['h','s','m','c'].forEach(x=>document.getElementById('gp'+x).className='pb'+(p===x?' active':''));
+  document.getElementById('gcd').style.display=p==='c'?'flex':'none';
+  if(p!=='c')rnGar();
+}
+
+function getRangeG(){
+  const n=new Date();let ini,fim;
+  if(perG==='h'){ini=new Date(n.getFullYear(),n.getMonth(),n.getDate(),0,0,0);fim=new Date(n.getFullYear(),n.getMonth(),n.getDate(),23,59,59);}
+  else if(perG==='s'){const dw=n.getDay();ini=new Date(n);ini.setDate(n.getDate()-dw);ini.setHours(0,0,0,0);fim=new Date(ini);fim.setDate(ini.getDate()+6);fim.setHours(23,59,59);}
+  else if(perG==='m'){ini=new Date(n.getFullYear(),n.getMonth(),1,0,0,0);fim=new Date(n.getFullYear(),n.getMonth()+1,0,23,59,59);}
+  else{const vi=document.getElementById('gdi').value;const vf=document.getElementById('gdf').value;ini=vi?new Date(vi+'T00:00:00'):new Date(0);fim=vf?new Date(vf+'T23:59:59'):new Date();}
+  return{ini,fim};
+}
+
+function rnGar(){
+  const{ini,fim}=getRangeG();
+  const lbs={h:'Garantias de hoje',s:'Garantias desta semana',m:'Garantias deste mês',c:'Período personalizado'};
+  document.getElementById('gtt').textContent=lbs[perG];
+  garR=[];
+  ST.cards.forEach(c=>{
+    if(c.tipo&&c.tipo.startsWith('gar')){
+      const h0=c.history&&c.history[0];
+      if(h0){const d=new Date(h0.at);if(d>=ini&&d<=fim)garR.push({os:c.os,ped:c.ped||'—',tipo:c.tipo,obs:c.obs||'—',u:h0.u,at:h0.at,col:c.col});}
+    }
+  });
+  garR.sort((a,b)=>b.at-a.at);
+  document.getElementById('g0').textContent=garR.length;
+  document.getElementById('g1').textContent=garR.filter(r=>r.tipo==='gar-hora').length;
+  document.getElementById('g2').textContent=garR.filter(r=>r.tipo==='gar-armacao').length;
+  document.getElementById('g3').textContent=garR.filter(r=>r.tipo==='gar-pedido').length;
+  const b=document.getElementById('gb2');
+  if(!garR.length){b.innerHTML='<div class="er">Nenhuma garantia neste período.</div>';return;}
+  const status=['Pedido','Ag. montagem','Em montagem','Pronto','Avisado','Entregue'];
+  b.innerHTML=`<table><thead><tr><th>#</th><th>OS</th><th>Pedido</th><th>Tipo</th><th>Motivo</th><th>Responsável</th><th>Status</th><th>Data</th></tr></thead><tbody>${garR.map((r,i)=>{return`<tr><td style="color:var(--mu);font-size:11px">${i+1}</td><td style="font-weight:600">${r.os}</td><td>${r.ped}</td><td><span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500" class="bgr">${tGL(r.tipo)}</span></td><td style="color:var(--mu);font-size:12px;max-width:200px">${r.obs}</td><td style="color:var(--mu)">${r.u}</td><td><span style="font-size:10px;padding:2px 7px;border-radius:20px;background:var(--bg);border:1px solid var(--bo)">${status[r.col]||'—'}</span></td><td style="color:var(--mu);white-space:nowrap">${fd(r.at)}</td></tr>`;}).join('')}</tbody></table>`;
+}
+
+function expGarCSV(){
+  if(!garR.length){alert('Nenhum dado.');return;}
+  const csv=['OS,Pedido,Tipo,Motivo,Responsavel,Data',...garR.map(r=>[r.os,r.ped,tGL(r.tipo),r.obs,r.u,fd(r.at)].join(','))].join('\n');
+  const b=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='garantias.csv';a.click();URL.revokeObjectURL(u);
+}
+
 function setPer(p){
   per=p;['h','s','m','c'].forEach(x=>document.getElementById('p'+x).className='pb'+(p===x?' active':''));
   document.getElementById('cd').style.display=p==='c'?'flex':'none';
