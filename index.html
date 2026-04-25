@@ -364,6 +364,16 @@ tbody tr:hover{background:var(--bg);}
   </div>
 </div>
 
+<div class="mb" id="rfm" style="display:none">
+  <div class="md" style="max-width:420px">
+    <div class="mh"><span>Refazer serviço</span><button class="mx" onclick="clsRf()">&#10005;</button></div>
+    <div class="mf"><label>Motivo do refazer <span style="color:var(--re)">*</span></label>
+      <textarea id="frf" placeholder="Descreva o motivo pelo qual o serviço será refeito..." style="width:100%;font-size:13px;padding:8px 10px;border-radius:8px;border:1.5px solid var(--bo);background:var(--bg);color:var(--tx);font-family:inherit;outline:none;resize:vertical;min-height:80px"></textarea>
+    </div>
+    <div class="mft"><button class="bc" onclick="clsRf()">Cancelar</button><button class="bsv" style="background:#DC2626;border-color:#DC2626" onclick="svRf()">Refazer</button></div>
+  </div>
+</div>
+
 <div class="mb" id="hm" style="display:none">
   <div class="mo"><h3 id="hmt">Histórico</h3>
     <div class="hsc"><div class="hti">Movimentações</div><div id="hl"></div></div>
@@ -687,7 +697,7 @@ function rnKan(){
       if(filtroUrg&&!c.urgente)return;
       let ex='';if(srch){if(!mi.has(c.id)){return;}ex=' hi';}
       const div=document.createElement('div');div.className='ca'+(ccl?' '+ccl:'')+(c.urgente?' urg':'')+ex;
-      div.innerHTML=`<div class="cos">${hl(c.os,srch)}</div><div class="cp">${hl(c.ped,srch)}</div>${c.refeito?`<div class="cg" style="color:#DC2626;font-weight:700;font-size:11px">🔄 SERVIÇO REFEITO</div>`:''}${c.dtVenda?`<div class="cg" style="color:var(--v);font-weight:500">📅 Venda: ${c.dtVenda.split('-').reverse().join('/')}</div>`:''}${c.prazo?`<div class="cg" style="color:${c.urgente?'#DC2626':'var(--mu)'};font-weight:${c.urgente?'700':'500'}">⏰${c.urgente?' 🚨 URGENTE':''} Entrega: ${c.prazo.split('-').reverse().join('/')}</div>`:''}${c.obs?`<div class="cg" style="color:var(--wa);font-style:italic">📝 ${c.obs}${c.receita?' · '+c.receita:''}</div>`:''}${c.respGar?`<div class="cg" style="color:var(--mu)">👤 Resp: ${c.respGar}</div>`:''}${c.obsTxt?`<div class="cg" style="color:var(--mu);font-style:italic">💬 ${c.obsTxt}</div>`:''}${c.esfOD!=null?`<div class="cg">OD ${fG(c.esfOD,c.cilOD)} · OE ${fG(c.esfOE,c.cilOE)}</div>`:''}<div class="cm"><span class="bg2 ${tGC(c.tipo)}">${tGL(c.tipo)}</span><span class="tm ${tc}">${ft(h)}</span></div><div class="cu">por ${lu}</div><div class="cac"><button class="bn" ${!cm||ci===5?'disabled':''} onclick="mvCard('${c.id}')">${ci<5?nl:'Concluído'}</button><button class="bh" onclick="opH('${c.id}')">&#9776;</button>${(R.cd||R.r==='adm')&&c.col>0?`<button class="bde" style="background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;font-size:11px;padding:4px 8px;border-radius:6px;cursor:pointer" onclick="opRf('${c.id}')">↩ Refazer</button>`:''}${R.cd?`<button class="bde" onclick="dlCard('${c.id}')">&#10005;</button>`:''}</div>`;
+      div.innerHTML=`<div class="cos">${hl(c.os,srch)}</div><div class="cp">${hl(c.ped,srch)}</div>${c.refeito?`<div class="cg" style="color:#DC2626;font-weight:700;font-size:11px">🔄 SERVIÇO REFEITO</div>`:''}${c.dtVenda?`<div class="cg" style="color:var(--v);font-weight:500">📅 Venda: ${c.dtVenda.split('-').reverse().join('/')}</div>`:''}${c.prazo?`<div class="cg" style="color:${c.urgente?'#DC2626':'var(--mu)'};font-weight:${c.urgente?'700':'500'}">⏰${c.urgente?' 🚨 URGENTE':''} Entrega: ${c.prazo.split('-').reverse().join('/')}</div>`:''}${c.obs?`<div class="cg" style="color:var(--wa);font-style:italic">📝 ${c.obs}${c.receita?' · '+c.receita:''}</div>`:''}${c.respGar?`<div class="cg" style="color:var(--mu)">👤 Resp: ${c.respGar}</div>`:''}${c.obsTxt?`<div class="cg" style="color:var(--mu);font-style:italic">💬 ${c.obsTxt}</div>`:''}${c.esfOD!=null?`<div class="cg">OD ${fG(c.esfOD,c.cilOD)} · OE ${fG(c.esfOE,c.cilOE)}</div>`:''}<div class="cm"><span class="bg2 ${tGC(c.tipo)}">${tGL(c.tipo)}</span><span class="tm ${tc}">${ft(h)}</span></div><div class="cu">por ${lu}</div><div class="cac"><button class="bn" ${!cm||ci===5?'disabled':''} onclick="mvCard('${c.id}')">${ci<5?nl:'Concluído'}</button><button class="bh" onclick="opH('${c.id}')">&#9776;</button>${(R.r==='supervisor'||R.r==='adm')&&c.col>0?`<button class="bde" style="background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;font-size:11px;padding:4px 8px;border-radius:6px;cursor:pointer" onclick="opRf('${c.id}')">↩ Refazer</button>`:''}${R.cd?`<button class="bde" onclick="dlCard('${c.id}')">&#10005;</button>`:''}</div>`;
       col.appendChild(div);
     });
 
