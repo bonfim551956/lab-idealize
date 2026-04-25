@@ -711,11 +711,17 @@ function rnRel(){
   ST.cards.forEach(c=>{
     (c.history||[]).forEach(h=>{
       const d=new Date(h.at);
+      // Para vendas usa a dtVenda do card se disponível
+      const dVenda=h.venda&&c.dtVenda?new Date(c.dtVenda+'T12:00:00'):d;
       if(d>=ini&&d<=fim){
-        // Conta vendas lançadas (para os cards de resumo)
-        if(h.venda){vendaCount++;if(c.tipo==='hora'||c.tipo==='gar-hora')horaCount++;}
+        // Conta vendas pela data da venda
+        if(h.venda&&dVenda>=ini&&dVenda<=fim){vendaCount++;if(c.tipo==='hora'||c.tipo==='gar-hora')horaCount++;}
+        else if(h.venda&&!(dVenda>=ini&&dVenda<=fim)){}
         // Só entra na tabela quando passou por Em montagem → Pronto
         if(h.mc) relR.push({os:c.os,ped:c.ped,tipo:c.tipo,u:h.u,r:h.r,at:h.at,ev:'montagem'});
+      } else if(h.venda&&dVenda>=ini&&dVenda<=fim){
+        // Venda com dtVenda no período mas lançamento fora
+        vendaCount++;if(c.tipo==='hora'||c.tipo==='gar-hora')horaCount++;
       }
     });
   });
