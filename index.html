@@ -499,13 +499,24 @@ function doLogout(){
 // ── TABS ──────────────────────────────────────────
 function sw(tab){
   const map={k:'ks',r:'rs',g:'gs',e:'es'};
-  ['k','r','g','e'].forEach(t=>{
-    const tb=document.getElementById('t-'+t);if(tb)tb.className='tab'+(tab===t?' active':'');
-    const el=document.getElementById(map[t]);
-    if(el)el.style.display=tab===t?(t==='k'?'block':'flex'):'none';
+  // Primeiro esconde tudo
+  Object.values(map).forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.style.display='none';
   });
+  // Atualiza abas
+  ['k','r','g','e'].forEach(t=>{
+    const tb=document.getElementById('t-'+t);
+    if(tb)tb.className='tab'+(tab===t?' active':'');
+  });
+  // Mostra só a aba ativa
+  const active=document.getElementById(map[tab]);
+  if(active){
+    if(tab==='k')active.style.display='block';
+    else{active.style.display='flex';active.style.flexDirection='column';}
+  }
   if(tab==='r')rnRel();
-  if(tab==='g'){document.getElementById('gs').style.display='flex';document.getElementById('gs').style.flexDirection='column';rnGar();}
+  if(tab==='g')rnGar();
   if(tab==='e')rnEst();
 }
 
