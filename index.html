@@ -303,6 +303,7 @@ tbody tr:hover{background:var(--bg);}
         <div class="mf" style="margin:0"><label>Cil. OE <span style="color:var(--re)">*</span></label><input id="fce" placeholder="Ex: -0.50" type="number" step="0.25"/></div>
       </div>
     </div>
+    <div class="mf" id="obs-wrap" style="display:none"><label>Motivo da garantia <span style="color:var(--re)">*</span></label><textarea id="fobs" placeholder="Descreva o motivo da garantia..." style="width:100%;font-size:13px;padding:8px 10px;border-radius:8px;border:1.5px solid var(--bo);background:var(--bg);color:var(--tx);font-family:inherit;outline:none;resize:vertical;min-height:70px;transition:border-color .2s"></textarea></div>
     <div class="mft"><button class="bc" onclick="clsOs()">Cancelar</button><button class="bsv" onclick="svOS()">Salvar</button></div>
   </div>
 </div>
@@ -465,7 +466,7 @@ function tgUrgente(checked){
   d.setDate(d.getDate()+(checked?3:10));
   document.getElementById('fprazo').value=d.toISOString().split('T')[0];
 }
-function tgG(v){document.getElementById('gg').style.display=COM_GRAU.includes(v)?'grid':'none';const semPed=['passagem','gar-hora','gar-armacao','hora'];const fpw=document.getElementById('fp-wrap');if(fpw)fpw.style.display=semPed.includes(v)?'none':'block';if(semPed.includes(v)){document.getElementById('fp').value=v.toUpperCase();}else{const cur=document.getElementById('fp').value;if(['PASSAGEM','GAR-HORA','GAR-ARMACAO','HORA'].includes(cur))document.getElementById('fp').value='';}}
+function tgG(v){document.getElementById('gg').style.display=COM_GRAU.includes(v)?'grid':'none';const obsWrap=document.getElementById('obs-wrap');if(obsWrap)obsWrap.style.display=v&&v.startsWith('gar')?'block':'none';const semPed=['passagem','gar-hora','gar-armacao','hora'];const fpw=document.getElementById('fp-wrap');if(fpw)fpw.style.display=semPed.includes(v)?'none':'block';if(semPed.includes(v)){document.getElementById('fp').value=v.toUpperCase();}else{const cur=document.getElementById('fp').value;if(['PASSAGEM','GAR-HORA','GAR-ARMACAO','HORA'].includes(cur))document.getElementById('fp').value='';}}
 
 // ── BUSCA ─────────────────────────────────────────
 function onSrch(v){srch=v.trim().toLowerCase();document.getElementById('sc').className='sc'+(srch?' show':'');rnKan();}
@@ -514,7 +515,7 @@ function clsH(){document.getElementById('hm').style.display='none';}
 
 function opOs(){
   document.getElementById('nw').style.display=R&&R.ca?'none':'block';
-  ['fo','fp','fod','foe','fcd','fce'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['fo','fp','fod','foe','fcd','fce'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('fobs').value='';
   document.getElementById('fdt').value=new Date().toISOString().split('T')[0];
   document.getElementById('ft').value='venda';tgG('venda');document.getElementById('fp-wrap').style.display='block';
   const d=new Date();d.setDate(d.getDate()+10);
@@ -532,6 +533,9 @@ async function svOS(){
   const dtVenda=document.getElementById('fdt').value;
   if(!os||!ped||!dtVenda){alert('Preencha OS, pedido e data da venda.');return;}
   const grauVisivel=document.getElementById('gg').style.display==='grid'||document.getElementById('gg').style.display==='block';
+  const obsVisivel=document.getElementById('obs-wrap').style.display==='block';
+  const obs=document.getElementById('fobs').value.trim();
+  if(obsVisivel&&!obs){alert('Preencha o motivo da garantia.');return;}
   const esfOD=document.getElementById('fod').value;
   const esfOE=document.getElementById('foe').value;
   const cilOD=document.getElementById('fcd').value;
@@ -544,7 +548,7 @@ async function svOS(){
   const cilOEv=parseFloat(cilOE)||null;
   const prazo=document.getElementById('fprazo').value;
   const urgente=document.getElementById('furgente').checked;
-  const c={id:'os_'+now,os,ped,tipo,dtVenda,prazo,urgente,esfOD:esfODv,esfOE:esfOEv,cilOD:cilODv,cilOE:cilOEv,col:0,ts:now,tsCreated:now,history:[]};
+  const c={id:'os_'+now,os,ped,tipo,dtVenda,prazo,urgente,obs,esfOD:esfODv,esfOE:esfOEv,cilOD:cilODv,cilOE:cilOEv,col:0,ts:now,tsCreated:now,history:[]};
   const isVenda=tipo==='venda'||tipo==='hora';
   const isGar=tipo&&tipo.startsWith('gar');
   c.history.push({u:U.n,r:U.r,from:-1,to:0,at:now,mc:false,venda:isVenda,garantia:isGar});
@@ -581,7 +585,7 @@ function rnKan(){
       const nl=ci<5?'→ '+CS[ci+1]:'Concluído';
       let ex='';if(srch){ex=mi.has(c.id)?' hi':' di';}
       const div=document.createElement('div');div.className='ca'+(ccl?' '+ccl:'')+(c.urgente?' urg':'')+ex;
-      div.innerHTML=`<div class="cos">${hl(c.os,srch)}</div><div class="cp">${hl(c.ped,srch)}</div>${c.dtVenda?`<div class="cg" style="color:var(--v);font-weight:500">📅 Venda: ${c.dtVenda.split('-').reverse().join('/')}</div>`:''}${c.prazo?`<div class="cg" style="color:${c.urgente?'#DC2626':'var(--mu)'};font-weight:${c.urgente?'700':'500'}">⏰${c.urgente?' 🚨 URGENTE':''} Entrega: ${c.prazo.split('-').reverse().join('/')}</div>`:''}${c.esfOD!=null?`<div class="cg">OD ${fG(c.esfOD,c.cilOD)} · OE ${fG(c.esfOE,c.cilOE)}</div>`:''}<div class="cm"><span class="bg2 ${tGC(c.tipo)}">${tGL(c.tipo)}</span><span class="tm ${tc}">${ft(h)}</span></div><div class="cu">por ${lu}</div><div class="cac"><button class="bn" ${!cm||ci===5?'disabled':''} onclick="mvCard('${c.id}')">${ci<5?nl:'Concluído'}</button><button class="bh" onclick="opH('${c.id}')">&#9776;</button>${R.cd?`<button class="bde" onclick="dlCard('${c.id}')">&#10005;</button>`:''}</div>`;
+      div.innerHTML=`<div class="cos">${hl(c.os,srch)}</div><div class="cp">${hl(c.ped,srch)}</div>${c.dtVenda?`<div class="cg" style="color:var(--v);font-weight:500">📅 Venda: ${c.dtVenda.split('-').reverse().join('/')}</div>`:''}${c.prazo?`<div class="cg" style="color:${c.urgente?'#DC2626':'var(--mu)'};font-weight:${c.urgente?'700':'500'}">⏰${c.urgente?' 🚨 URGENTE':''} Entrega: ${c.prazo.split('-').reverse().join('/')}</div>`:''}${c.obs?`<div class="cg" style="color:var(--wa);font-style:italic">📝 ${c.obs}</div>`:''}${c.esfOD!=null?`<div class="cg">OD ${fG(c.esfOD,c.cilOD)} · OE ${fG(c.esfOE,c.cilOE)}</div>`:''}<div class="cm"><span class="bg2 ${tGC(c.tipo)}">${tGL(c.tipo)}</span><span class="tm ${tc}">${ft(h)}</span></div><div class="cu">por ${lu}</div><div class="cac"><button class="bn" ${!cm||ci===5?'disabled':''} onclick="mvCard('${c.id}')">${ci<5?nl:'Concluído'}</button><button class="bh" onclick="opH('${c.id}')">&#9776;</button>${R.cd?`<button class="bde" onclick="dlCard('${c.id}')">&#10005;</button>`:''}</div>`;
       col.appendChild(div);
     });
 
