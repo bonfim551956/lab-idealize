@@ -240,7 +240,8 @@ tbody tr:hover{background:var(--bg);}
     </div>
     <div class="rsum">
       <div class="rs2"><div class="rl">Total montagens</div><div class="rv v" id="r0">0</div></div>
-      <div class="rs2"><div class="rl">Vendas lançadas</div><div class="rv i" id="r1">0</div></div>
+      <div class="rs2"><div class="rl">Venda Pedido</div><div class="rv i" id="r1">0</div></div>
+      <div class="rs2"><div class="rl">Venda Hora</div><div class="rv" style="color:var(--vc)" id="r1h">0</div></div>
       <div class="rs2"><div class="rl">Garantias lançadas</div><div class="rv w" id="r2">0</div></div>
       <div class="rs2"><div class="rl">Pedidos Hora</div><div class="rv" id="r3">0</div></div>
       <div class="rs2"><div class="rl">Passagens</div><div class="rv" style="color:#5B21B6" id="r4">0</div></div>
@@ -404,7 +405,7 @@ const US=[
 const RS={
   supervisor:{l:'Supervisor',c:'rb-s',se:[0,1,2,3,4,5],mv:[0,1,2,3,4],ca:true,cd:true,ce:true},
   adm:{l:'Administrador',c:'rb-a',se:[0,1,2,3,4,5],mv:[0,3,4],ca:true,cd:false,ce:true},
-  montagem:{l:'Montagem',c:'rb-m',se:[1,2,3],mv:[1,2,3],ca:false,cd:false,ce:false},
+  montagem:{l:'Montagem',c:'rb-m',se:[1,2,3],mv:[1,2],ca:false,cd:false,ce:false},
 };
 const CF=['Pedido','Aguardando montagem','Em montagem','Pronto','Avisado','Entregue'];
 const CS=['Pedido','Ag. montagem','Em montagem','Pronto','Avisado','Entregue'];
@@ -766,7 +767,8 @@ function rnRel(){
   if(per==='fgar') relR=relR.filter(r=>r.ev==='garantia');
   relR.sort((a,b)=>b.at-a.at);
   document.getElementById('r0').textContent=relR.filter(r=>r.ev==='montagem').length;
-  document.getElementById('r1').textContent=vendaCount;
+  document.getElementById('r1').textContent=vendaCount-horaCount;
+  const r1hEl=document.getElementById('r1h');if(r1hEl)r1hEl.textContent=horaCount;
   document.getElementById('r2').textContent=relR.filter(r=>r.ev==='garantia').length;
   document.getElementById('r3').textContent=horaCount;
   document.getElementById('r4').textContent=relR.filter(r=>r.ev==='passagem').length;
