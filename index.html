@@ -205,7 +205,9 @@ tbody tr:hover{background:var(--bg);}
         <input type="text" id="si" placeholder="Buscar OS ou pedido..." oninput="onSrch(this.value)" autocomplete="off"/>
         <button class="sc" id="sc" onclick="clrSrch()">&#10005;</button>
       </div>
-      <button id="btn-urg" onclick="tgFiltroUrg()" style="font-size:12px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--re);background:none;color:var(--re);cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap"> Urgentes</button>
+      <button id="btn-urg" onclick="tgFiltro('urg')" style="font-size:12px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--re);background:none;color:var(--re);cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">Urgentes</button>
+      <button id="btn-gar" onclick="tgFiltro('gar')" style="font-size:12px;padding:6px 14px;border-radius:9px;border:1.5px solid #F59A2A;background:none;color:#F59A2A;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">Garantias</button>
+      <button id="btn-vnd" onclick="tgFiltro('vnd')" style="font-size:12px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--v);background:none;color:var(--v);cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">Vendas</button>
     </div>
     <div class="srb" id="srb"><span id="srt"></span><button onclick="clrSrch()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--in);font-family:inherit">Limpar</button></div>
     <div class="sy"><div class="sd" id="sd"></div><span id="sx">Conectando...</span></div>
@@ -414,7 +416,7 @@ const CS=['Pedido','Ag. montagem','Em montagem','Pronto','Avisado','Entregue'];
 const COM_GRAU=['hora','gar-hora','gar-estoque'];
 const COM_BAIXA=['hora','gar-hora','gar-estoque'];
 
-let U=null,R=null,ST={cards:[],estoque:{}},srch='',per='h',relR=[],filtroUrg=false;
+let U=null,R=null,ST={cards:[],estoque:{}},srch='',per='h',relR=[],filtroUrg=false,filtroAtivo='';
 
 // ── FIREBASE REST API ──────────────────────────────
 async function fbGet(path){
@@ -549,13 +551,18 @@ function tgUrgente(checked){
 function tgG(v){document.getElementById('gg').style.display=COM_GRAU.includes(v)?'grid':'none';const obsWrap=document.getElementById('obs-wrap');if(obsWrap)obsWrap.style.display=v&&v.startsWith('gar')?'block':'none';const semPed=['passagem','gar-hora','gar-armacao','hora'];const fpw=document.getElementById('fp-wrap');if(fpw)fpw.style.display=semPed.includes(v)?'none':'block';if(semPed.includes(v)){document.getElementById('fp').value=v.toUpperCase();}else{const cur=document.getElementById('fp').value;if(['PASSAGEM','GAR-HORA','GAR-ARMACAO','HORA'].includes(cur))document.getElementById('fp').value='';}}
 
 // ── BUSCA ─────────────────────────────────────────
-function tgFiltroUrg(){
-  filtroUrg=!filtroUrg;
-  const btn=document.getElementById('btn-urg');
-  if(filtroUrg){btn.style.background='var(--re)';btn.style.color='#fff';}
-  else{btn.style.background='none';btn.style.color='var(--re)';}
+function tgFiltro(tipo){
+  filtroAtivo=filtroAtivo===tipo?'':tipo;
+  filtroUrg=filtroAtivo==='urg';
+  // reset all buttons
+  const btns={urg:{id:'btn-urg',cor:'var(--re)'},gar:{id:'btn-gar',cor:'#F59A2A'},vnd:{id:'btn-vnd',cor:'var(--v)'}};
+  Object.entries(btns).forEach(([k,v])=>{
+    const b=document.getElementById(v.id);if(!b)return;
+    if(filtroAtivo===k){b.style.background=v.cor;b.style.color='#fff';}
+    else{b.style.background='none';b.style.color=v.cor;}
+  });
   rnKan();
-  if(filtroUrg)window.scrollTo({top:0,behavior:'smooth'});
+  if(filtroAtivo)window.scrollTo({top:0,behavior:'smooth'});
 }
 let rfId=null;
 function opRf(id){rfId=id;document.getElementById('frf').value='';document.getElementById('rfm').style.display='flex';}
@@ -699,7 +706,9 @@ function rnKan(){
       const lu=lh?lh.u:'—';
       const cm=R.mv.includes(ci)&&ci<5&&R.mv.includes(ci+1);
       const nl=ci<5?'→ '+CS[ci+1]:'Concluído';
-      if(filtroUrg&&!c.urgente)return;
+      if(filtroAtivo==='urg'&&!c.urgente)return;
+      if(filtroAtivo==='gar'&&!(c.tipo&&c.tipo.startsWith('gar')))return;
+      if(filtroAtivo==='vnd'&&!(c.tipo==='venda'||c.tipo==='hora'))return;
       let ex='';if(srch){if(!mi.has(c.id)){return;}ex=' hi';}
       const div=document.createElement('div');div.className='ca'+(ccl?' '+ccl:'')+(c.urgente?' urg':'')+ex;
       div.innerHTML=`<div class="cos">${hl(c.os,srch)}</div><div class="cp">${hl(c.ped,srch)}</div>${U&&U.un==='central'&&c.unidade?`<div class="cg" style="font-size:10px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:.05em">${c.unidade}</div>`:''}${c.refeito?`<div class="cg" style="color:#DC2626;font-weight:700;font-size:11px">SERVIÇO REFEITO</div>`:''}${c.dtVenda?`<div class="cg" style="color:var(--v);font-weight:500">Venda: ${c.dtVenda.split('-').reverse().join('/')}</div>`:''}${c.prazo?`<div class="cg" style="color:${c.urgente?'#DC2626':'var(--mu)'};font-weight:${c.urgente?'700':'500'}">${c.urgente?' URGENTE':''} Entrega: ${c.prazo.split('-').reverse().join('/')}</div>`:''}${c.obs?`<div class="cg" style="color:var(--wa);font-style:italic">${c.obs}${c.receita?' · '+c.receita:''}</div>`:''}${c.osCompra?`<div class="cg" style="color:var(--mu)">OS Compra: ${c.osCompra}</div>`:''}${c.respGar?`<div class="cg" style="color:var(--mu)">Resp: ${c.respGar}</div>`:''}${c.obsTxt?`<div class="cg" style="color:var(--mu);font-style:italic">${c.obsTxt}</div>`:''}${c.esfOD!=null?`<div class="cg">OD ${fG(c.esfOD,c.cilOD)} · OE ${fG(c.esfOE,c.cilOE)}</div>`:''}<div class="cm"><span class="bg2 ${tGC(c.tipo)}">${tGL(c.tipo)}</span><span class="tm ${tc}">${ft(h)}</span></div><div class="cu">por ${lu}</div><div class="cac">${cm?`<button class="bn" onclick="mvCard('${c.id}')">${nl}</button>`:''}${ci===5?`<button class="bn" disabled>Concluído</button>`:''}<button class="bh" onclick="opH('${c.id}')">&#9776;</button>${`<button class="bde" style="background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;font-size:11px;padding:4px 8px;border-radius:6px;cursor:pointer" onclick="opRf('${c.id}')">Refazer</button>`}${R.cd?`<button class="bde" onclick="dlCard('${c.id}')">&#10005;</button>`:''}</div>`;
