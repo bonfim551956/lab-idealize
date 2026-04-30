@@ -616,7 +616,7 @@ function tgFiltro(tipo){
 }
 let rfId=null,mvPendId=null,editId=null;
 function clsLab(){mvPendId=null;document.getElementById('labm').style.display='none';}
-async function svLab(){const lab=document.getElementById('flab').value;if(!lab){alert('Selecione Lab Próprio ou Lab Parceiro.');return;}const obsmv=document.getElementById('fobsmv').value.trim();clsLab();await mvCardExec(mvPendId,lab,obsmv);}
+async function svLab(){const lab=document.getElementById('flab').value;if(!lab){alert('Selecione Lab Próprio ou Lab Parceiro.');return;}clsLab();await mvCardExec(mvPendId,lab,null);}
 function opRf(id){rfId=id;document.getElementById('frf').value='';document.getElementById('rfm').style.display='flex';}
 function clsRf(){rfId=null;document.getElementById('rfm').style.display='none';}
 async function svRf(){
@@ -646,7 +646,6 @@ function mvCard(id){
   if(c.col===0){
     mvPendId=id;
     document.getElementById('flab').value='';
-    document.getElementById('fobsmv').value='';
     document.getElementById('labm').style.display='flex';
     return;
   }
