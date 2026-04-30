@@ -412,9 +412,6 @@ tbody tr:hover{background:var(--bg);}
         <option value="Lab Parceiro">Lab Parceiro</option>
       </select>
     </div>
-    <div class="mf"><label>Observação</label>
-      <textarea id="fobsmv" placeholder="Informações sobre a lente, grau ou observações gerais..." style="width:100%;font-size:13px;padding:8px 10px;border-radius:8px;border:1.5px solid var(--bo);background:var(--bg);color:var(--tx);font-family:inherit;outline:none;resize:vertical;min-height:70px"></textarea>
-    </div>
     <div class="mft"><button class="bc" onclick="clsLab()">Cancelar</button><button class="bsv" onclick="svLab()">Confirmar</button></div>
   </div>
 </div>
@@ -666,9 +663,9 @@ async function mvCardExec(id,lab,obsmv){
   const isPassagem=from===2&&c.tipo==='passagem';
   const baixa=from===0&&COM_BAIXA.includes(c.tipo);
   c.history.push({u:U.n,r:U.r,from,to:c.col,at:Date.now(),mc,garantia:isGarMc,passagem:isPassagem});
-  if(baixa&&c.esfOD!==undefined&&c.esfOD!==null){
+  if(baixa){
     [[c.esfOD,c.cilOD||0],[c.esfOE,c.cilOE||0]].forEach(([e,cl])=>{
-      if(e==null)return;
+      if(e===null||e===undefined)return;
       const k=eK(e,cl);
       if(ST.estoque[k]&&ST.estoque[k].qty>0){ST.estoque[k].qty--;saveEstoque();}
     });
