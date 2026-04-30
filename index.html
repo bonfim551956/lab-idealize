@@ -183,6 +183,7 @@ tbody tr:hover{background:var(--bg);}
         <button class="tab active" id="t-k" onclick="sw('k')">Serviços</button>
         <button class="tab" id="t-r" onclick="sw('r')">Montagem</button>
         <button class="tab" id="t-g" onclick="sw('g')">Garantias</button>
+        <button class="tab" id="t-r2" onclick="sw('r2')">Refeitos</button>
         <button class="tab" id="t-e" onclick="sw('e')" style="display:none">Estoque</button>
       </div>
       <div class="av" id="av"></div>
@@ -278,9 +279,40 @@ tbody tr:hover{background:var(--bg);}
       <div class="rs2"><div class="rl">Gar. Armação</div><div class="rv i" id="g2">0</div></div>
       <div class="rs2"><div class="rl">Gar. Pedido</div><div class="rv" id="g3">0</div></div>
     </div>
+    <div class="rsum" id="g-motivos" style="flex-wrap:wrap;margin-top:.5rem"></div>
     <div class="tw">
       <div class="th2"><span class="tt" id="gtt">Garantias de hoje</span><button class="bex" onclick="expGarCSV()">Exportar CSV</button></div>
       <div id="gb2"><div class="er">Selecione um período.</div></div>
+    </div>
+  </div>
+
+  <div id="r2s" class="rm" style="display:none">
+    <div class="rh">
+      <span class="rt">Relatório de Refeitos</span>
+      <div>
+        <div class="pb-w">
+          <button class="pb active" id="r2ph" onclick="setPerR2('h')">Hoje</button>
+          <button class="pb" id="r2ps" onclick="setPerR2('s')">Esta semana</button>
+          <button class="pb" id="r2pm" onclick="setPerR2('m')">Este mês</button>
+          <button class="pb" id="r2pc" onclick="setPerR2('c')">Personalizado</button>
+        </div>
+        <div class="cd" id="r2cd" style="display:none">
+          <label style="font-size:12px;color:var(--mu)">De</label><input type="date" id="r2di"/>
+          <span style="font-size:12px;color:var(--mu)">até</span><input type="date" id="r2df"/>
+          <button class="bf" onclick="rnRef()">Filtrar</button>
+        </div>
+      </div>
+    </div>
+    <div class="rsum">
+      <div class="rs2"><div class="rl">Total refeitos</div><div class="rv d" id="rf0">0</div></div>
+      <div class="rs2"><div class="rl">Venda Pedido</div><div class="rv i" id="rf1">0</div></div>
+      <div class="rs2"><div class="rl">Venda Hora</div><div class="rv" id="rf2">0</div></div>
+      <div class="rs2"><div class="rl">Garantia</div><div class="rv w" id="rf3">0</div></div>
+      <div class="rs2"><div class="rl">Passagem</div><div class="rv" style="color:#7C3AED" id="rf4">0</div></div>
+    </div>
+    <div class="tw">
+      <div class="th2"><span class="tt" id="r2tt">Refeitos de hoje</span><button class="bex" onclick="expRefCSV()">Exportar CSV</button></div>
+      <div id="r2b"><div class="er">Nenhum refeito neste período.</div></div>
     </div>
   </div>
 
@@ -531,14 +563,14 @@ function doLogout(){
 
 // ── TABS ──────────────────────────────────────────
 function sw(tab){
-  const map={k:'ks',r:'rs',g:'gs',e:'es'};
+  const map={k:'ks',r:'rs',g:'gs',r2:'r2s',e:'es'};
   // Primeiro esconde tudo
   Object.values(map).forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.style.display='none';
   });
   // Atualiza abas
-  ['k','r','g','e'].forEach(t=>{
+  ['k','r','g','r2','e'].forEach(t=>{
     const tb=document.getElementById('t-'+t);
     if(tb)tb.className='tab'+(tab===t?' active':'');
   });
@@ -550,6 +582,7 @@ function sw(tab){
   }
   if(tab==='r')rnRel();
   if(tab==='g')rnGar();
+  if(tab==='r2')rnRef();
   if(tab==='e')rnEst();
 }
 
@@ -633,7 +666,7 @@ async function mvCardExec(id,lab,obsmv){
   const isPassagem=from===2&&c.tipo==='passagem';
   const baixa=from===0&&COM_BAIXA.includes(c.tipo);
   c.history.push({u:U.n,r:U.r,from,to:c.col,at:Date.now(),mc,garantia:isGarMc,passagem:isPassagem});
-  if(baixa&&c.esfOD!=null){
+  if(baixa&&c.esfOD!==undefined&&c.esfOD!==null){
     [[c.esfOD,c.cilOD||0],[c.esfOE,c.cilOE||0]].forEach(([e,cl])=>{
       if(e==null)return;
       const k=eK(e,cl);
@@ -699,10 +732,10 @@ async function svOS(){
   const cilOE=document.getElementById('fce').value;
   if(grauVisivel&&(esfOD===''||esfOE===''||cilOD===''||cilOE==='')){alert('Preencha todos os graus (Esf. OD, Cil. OD, Esf. OE, Cil. OE).');return;}
   const now=Date.now();
-  const esfODv=parseFloat(esfOD)||null;
-  const esfOEv=parseFloat(esfOE)||null;
-  const cilODv=parseFloat(cilOD)||null;
-  const cilOEv=parseFloat(cilOE)||null;
+  const esfODv=esfOD!==''&&esfOD!=null?parseFloat(esfOD):null;
+  const esfOEv=esfOE!==''&&esfOE!=null?parseFloat(esfOE):null;
+  const cilODv=cilOD!==''&&cilOD!=null?parseFloat(cilOD):0;
+  const cilOEv=cilOE!==''&&cilOE!=null?parseFloat(cilOE):0;
   const prazo=document.getElementById('fprazo').value;
   const urgente=document.getElementById('furgente').checked;
   const obsTxt=document.getElementById('fobs-txt').value.trim();
@@ -791,6 +824,14 @@ function rnGar(){
   document.getElementById('g1').textContent=garR.filter(r=>r.tipo==='gar-hora').length;
   document.getElementById('g2').textContent=garR.filter(r=>r.tipo==='gar-armacao').length;
   document.getElementById('g3').textContent=garR.filter(r=>r.tipo==='gar-pedido').length;
+  // Cards por motivo
+  const motivos={};
+  garR.forEach(r=>{if(r.obs&&r.obs!=='—'){motivos[r.obs]=(motivos[r.obs]||0)+1;}});
+  const mDiv=document.getElementById('g-motivos');
+  if(mDiv){
+    const sorted=Object.entries(motivos).sort((a,b)=>b[1]-a[1]);
+    mDiv.innerHTML=sorted.length?sorted.map(([m,n])=>`<div class="rs2"><div class="rl">${m}</div><div class="rv" style="color:#374151">${n}</div></div>`).join(''):'';
+  }
   const b=document.getElementById('gb2');
   if(!garR.length){b.innerHTML='<div class="er">Nenhuma garantia neste período.</div>';return;}
   const status=['Pedido','Ag. montagem','Em montagem','Pronto','Avisado','Entregue'];
@@ -801,6 +842,64 @@ function expGarCSV(){
   if(!garR.length){alert('Nenhum dado.');return;}
   const csv=['OS,Pedido,Tipo,Motivo,Responsavel,Data',...garR.map(r=>[r.os,r.ped,tGL(r.tipo),r.obs,r.u,fd(r.at)].join(','))].join('\n');
   const b=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='garantias.csv';a.click();URL.revokeObjectURL(u);
+}
+
+let perR2='h',refR=[];
+
+function setPerR2(p){
+  perR2=p;
+  ['h','s','m','c'].forEach(x=>{const el=document.getElementById('r2p'+x);if(el)el.className='pb'+(p===x?' active':'');});
+  document.getElementById('r2cd').style.display=p==='c'?'flex':'none';
+  if(p!=='c')rnRef();
+}
+
+function getRangeR2(){
+  const n=new Date();let ini,fim;
+  if(perR2==='h'){ini=new Date(n.getFullYear(),n.getMonth(),n.getDate(),0,0,0);fim=new Date(n.getFullYear(),n.getMonth(),n.getDate(),23,59,59);}
+  else if(perR2==='s'){const dw=n.getDay();ini=new Date(n);ini.setDate(n.getDate()-dw);ini.setHours(0,0,0,0);fim=new Date(ini);fim.setDate(ini.getDate()+6);fim.setHours(23,59,59);}
+  else if(perR2==='m'){ini=new Date(n.getFullYear(),n.getMonth(),1,0,0,0);fim=new Date(n.getFullYear(),n.getMonth()+1,0,23,59,59);}
+  else{const vi=document.getElementById('r2di').value;const vf=document.getElementById('r2df').value;ini=vi?new Date(vi+'T00:00:00'):new Date(0);fim=vf?new Date(vf+'T23:59:59'):new Date();}
+  return{ini,fim};
+}
+
+function rnRef(){
+  const{ini,fim}=getRangeR2();
+  const lbs={h:'Refeitos de hoje',s:'Refeitos desta semana',m:'Refeitos deste mês',c:'Período personalizado'};
+  document.getElementById('r2tt').textContent=lbs[perR2];
+  refR=[];
+  ST.cards.forEach(c=>{
+    (c.history||[]).forEach(h=>{
+      if(h.refeito){
+        const d=new Date(h.at);
+        if(d>=ini&&d<=fim){
+          refR.push({
+            os:c.os,ped:c.ped||'—',tipo:c.tipo,
+            dtVenda:c.dtVenda||'—',prazo:c.prazo||'—',
+            esfOD:c.esfOD!=null?c.esfOD:'—',cilOD:c.cilOD!=null?c.cilOD:'—',
+            esfOE:c.esfOE!=null?c.esfOE:'—',cilOE:c.cilOE!=null?c.cilOE:'—',
+            motivo:h.motivoRefeito||'—',u:h.u,at:h.at,
+            col:c.col,lab:c.lab||'—',obs:c.obsmv||c.obs||'—'
+          });
+        }
+      }
+    });
+  });
+  refR.sort((a,b)=>b.at-a.at);
+  document.getElementById('rf0').textContent=refR.length;
+  document.getElementById('rf1').textContent=refR.filter(r=>r.tipo==='venda').length;
+  document.getElementById('rf2').textContent=refR.filter(r=>r.tipo==='hora').length;
+  document.getElementById('rf3').textContent=refR.filter(r=>r.tipo&&r.tipo.startsWith('gar')).length;
+  document.getElementById('rf4').textContent=refR.filter(r=>r.tipo==='passagem').length;
+  const b=document.getElementById('r2b');
+  if(!refR.length){b.innerHTML='<div class="er">Nenhum refeito neste período.</div>';return;}
+  const status=['Pedido','Ag. montagem','Em montagem','Pronto','Avisado','Entregue'];
+  b.innerHTML=`<table><thead><tr><th>#</th><th>OS</th><th>Pedido</th><th>Tipo</th><th>Dt. Venda</th><th>OD Esf/Cil</th><th>OE Esf/Cil</th><th>Lab</th><th>Motivo do Refazer</th><th>Refeito por</th><th>Status</th><th>Data</th></tr></thead><tbody>${refR.map((r,i)=>`<tr><td style="color:var(--mu);font-size:11px">${i+1}</td><td style="font-weight:600">${r.os}</td><td>${r.ped}</td><td><span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500" class="${tGC(r.tipo)}">${tGL(r.tipo)}</span></td><td style="color:var(--mu)">${r.dtVenda!=='—'?r.dtVenda.split('-').reverse().join('/'):r.dtVenda}</td><td style="color:var(--mu)">${r.esfOD}/${r.cilOD}</td><td style="color:var(--mu)">${r.esfOE}/${r.cilOE}</td><td style="color:var(--mu)">${r.lab}</td><td style="color:#DC2626;font-weight:500">${r.motivo}</td><td style="color:var(--mu)">${r.u}</td><td><span style="font-size:10px;padding:2px 7px;border-radius:20px;background:var(--bg);border:1px solid var(--bo)">${status[r.col]||'—'}</span></td><td style="color:var(--mu);white-space:nowrap">${fd(r.at)}</td></tr>`).join('')}</tbody></table>`;
+}
+
+function expRefCSV(){
+  if(!refR.length){alert('Nenhum dado.');return;}
+  const csv=['OS,Pedido,Tipo,Dt.Venda,OD.Esf,OD.Cil,OE.Esf,OE.Cil,Lab,Motivo,Refeito.Por,Data',...refR.map(r=>[r.os,r.ped,tGL(r.tipo),r.dtVenda,r.esfOD,r.cilOD,r.esfOE,r.cilOE,r.lab,r.motivo,r.u,fd(r.at)].join(','))].join('\n');
+  const b=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='refeitos.csv';a.click();URL.revokeObjectURL(u);
 }
 
 function setPer(p){
