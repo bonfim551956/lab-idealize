@@ -606,13 +606,26 @@ async function svRf(){
 function onSrch(v){srch=v.trim().toLowerCase();document.getElementById('sc').className='sc'+(srch?' show':'');rnKan();if(srch)window.scrollTo({top:0,behavior:'smooth'});}
 function clrSrch(){srch='';document.getElementById('si').value='';document.getElementById('sc').className='sc';rnKan();}
 
-// ── OS ────────────────────────────────────────────
-async function mvCard(id){
-  const c=ST.cards.find(x=>x.id===id);if(!c||c.col>=5)return;
+function mvCard(id){
+  const c=ST.cards.find(x=>x.id===id);if(!c||!R)return;
+  if(c.col>=5)return;
   if(!R.mv.includes(c.col)){alert('Sem permissão para mover desta coluna.');return;}
   if(c.col===0&&COM_GRAU.includes(c.tipo)&&(c.esfOD==null||c.esfOE==null)){
     alert('Preencha o grau (OD e OE) antes de mover para Ag. montagem.');return;
   }
+  if(c.col===0){
+    mvPendId=id;
+    document.getElementById('flab').value='';
+    document.getElementById('fobsmv').value='';
+    document.getElementById('labm').style.display='flex';
+    return;
+  }
+  mvCardExec(id,null,null);
+}
+async function mvCardExec(id,lab,obsmv){
+  const c=ST.cards.find(x=>x.id===id);if(!c||!R)return;
+  if(lab)c.lab=lab;
+  if(obsmv)c.obsmv=obsmv;
   const from=c.col;c.col=from+1;c.ts=Date.now();
   if(!c.history)c.history=[];
   const mc=from===2;
