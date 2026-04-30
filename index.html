@@ -200,15 +200,17 @@ tbody tr:hover{background:var(--bg);}
         <div class="st">Entregues: <b id="s2">0</b></div>
         <div class="st sm">Montagens hoje: <b id="s3">0</b></div>
       </div>
-      <div class="sw">
-        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input type="text" id="si" placeholder="Buscar OS ou pedido..." oninput="onSrch(this.value)" autocomplete="off"/>
-        <button class="sc" id="sc" onclick="clrSrch()">&#10005;</button>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div class="sw">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="si" placeholder="Buscar OS ou pedido..." oninput="onSrch(this.value)" autocomplete="off"/>
+          <button class="sc" id="sc" onclick="clrSrch()">&#10005;</button>
+        </div>
+        <button id="btn-urg" onclick="tgFiltro('urg')" style="font-size:12px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--re);background:none;color:var(--re);cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">Urgentes</button>
+        <button id="btn-gar" onclick="tgFiltro('gar')" style="font-size:12px;padding:6px 14px;border-radius:9px;border:1.5px solid #F59A2A;background:none;color:#F59A2A;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">Garantias</button>
+        <button id="btn-vnd" onclick="tgFiltro('vnd')" style="font-size:12px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--v);background:none;color:var(--v);cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">Vendas</button>
+        <button id="btn-ref" onclick="tgFiltro('ref')" style="font-size:12px;padding:6px 14px;border-radius:9px;border:1.5px solid #7C3AED;background:none;color:#7C3AED;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">Refeitos</button>
       </div>
-      <button id="btn-urg" onclick="tgFiltro('urg')" style="font-size:12px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--re);background:none;color:var(--re);cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">Urgentes</button>
-      <button id="btn-gar" onclick="tgFiltro('gar')" style="font-size:12px;padding:6px 14px;border-radius:9px;border:1.5px solid #F59A2A;background:none;color:#F59A2A;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">Garantias</button>
-      <button id="btn-vnd" onclick="tgFiltro('vnd')" style="font-size:12px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--v);background:none;color:var(--v);cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">Vendas</button>
-      <button id="btn-ref" onclick="tgFiltro('ref')" style="font-size:12px;padding:6px 14px;border-radius:9px;border:1.5px solid #7C3AED;background:none;color:#7C3AED;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">Refeitos</button>
     </div>
     <div class="srb" id="srb"><span id="srt"></span><button onclick="clrSrch()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--in);font-family:inherit">Limpar</button></div>
     <div class="sy"><div class="sd" id="sd"></div><span id="sx">Conectando...</span></div>
@@ -365,6 +367,23 @@ tbody tr:hover{background:var(--bg);}
       </div>
     </div>
     <div class="mft"><button class="bc" onclick="clsOs()">Cancelar</button><button class="bsv" onclick="svOS()">Salvar</button></div>
+  </div>
+</div>
+
+<div class="mb" id="labm" style="display:none">
+  <div class="md" style="max-width:420px">
+    <div class="mh"><span>Enviar para Ag. montagem</span><button class="mx" onclick="clsLab()">&#10005;</button></div>
+    <div class="mf"><label>Laboratório <span style="color:var(--re)">*</span></label>
+      <select id="flab">
+        <option value="">Selecione...</option>
+        <option value="Lab Próprio">Lab Próprio</option>
+        <option value="Lab Parceiro">Lab Parceiro</option>
+      </select>
+    </div>
+    <div class="mf"><label>Observação</label>
+      <textarea id="fobsmv" placeholder="Informações sobre a lente, grau ou observações gerais..." style="width:100%;font-size:13px;padding:8px 10px;border-radius:8px;border:1.5px solid var(--bo);background:var(--bg);color:var(--tx);font-family:inherit;outline:none;resize:vertical;min-height:70px"></textarea>
+    </div>
+    <div class="mft"><button class="bc" onclick="clsLab()">Cancelar</button><button class="bsv" onclick="svLab()">Confirmar</button></div>
   </div>
 </div>
 
@@ -565,7 +584,9 @@ function tgFiltro(tipo){
   rnKan();
   if(filtroAtivo)window.scrollTo({top:0,behavior:'smooth'});
 }
-let rfId=null;
+let rfId=null,mvPendId=null;
+function clsLab(){mvPendId=null;document.getElementById('labm').style.display='none';}
+async function svLab(){const lab=document.getElementById('flab').value;if(!lab){alert('Selecione Lab Próprio ou Lab Parceiro.');return;}const obsmv=document.getElementById('fobsmv').value.trim();clsLab();await mvCardExec(mvPendId,lab,obsmv);}
 function opRf(id){rfId=id;document.getElementById('frf').value='';document.getElementById('rfm').style.display='flex';}
 function clsRf(){rfId=null;document.getElementById('rfm').style.display='none';}
 async function svRf(){
@@ -713,7 +734,7 @@ function rnKan(){
       if(filtroAtivo==='ref'&&!c.refeito)return;
       let ex='';if(srch){if(!mi.has(c.id)){return;}ex=' hi';}
       const div=document.createElement('div');div.className='ca'+(ccl?' '+ccl:'')+(c.urgente?' urg':'')+ex;
-      div.innerHTML=`<div class="cos">${hl(c.os,srch)}</div><div class="cp">${hl(c.ped,srch)}</div>${U&&U.un==='central'&&c.unidade?`<div class="cg" style="font-size:10px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:.05em">${c.unidade}</div>`:''}${c.refeito?`<div class="cg" style="color:#DC2626;font-weight:700;font-size:11px">SERVIÇO REFEITO</div>`:''}${c.dtVenda?`<div class="cg" style="color:var(--v);font-weight:500">Venda: ${c.dtVenda.split('-').reverse().join('/')}</div>`:''}${c.prazo?`<div class="cg" style="color:${c.urgente?'#DC2626':'var(--mu)'};font-weight:${c.urgente?'700':'500'}">${c.urgente?' URGENTE':''} Entrega: ${c.prazo.split('-').reverse().join('/')}</div>`:''}${c.obs?`<div class="cg" style="color:var(--wa);font-style:italic">${c.obs}${c.receita?' · '+c.receita:''}</div>`:''}${c.osCompra?`<div class="cg" style="color:var(--mu)">OS Compra: ${c.osCompra}</div>`:''}${c.respGar?`<div class="cg" style="color:var(--mu)">Resp: ${c.respGar}</div>`:''}${c.obsTxt?`<div class="cg" style="color:var(--mu);font-style:italic">${c.obsTxt}</div>`:''}${c.esfOD!=null?`<div class="cg">OD ${fG(c.esfOD,c.cilOD)} · OE ${fG(c.esfOE,c.cilOE)}</div>`:''}<div class="cm"><span class="bg2 ${tGC(c.tipo)}">${tGL(c.tipo)}</span><span class="tm ${tc}">${ft(h)}</span></div><div class="cu">por ${lu}</div><div class="cac">${cm?`<button class="bn" onclick="mvCard('${c.id}')">${nl}</button>`:''}${ci===5?`<button class="bn" disabled>Concluído</button>`:''}<button class="bh" onclick="opH('${c.id}')">&#9776;</button>${`<button class="bde" style="background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;font-size:11px;padding:4px 8px;border-radius:6px;cursor:pointer" onclick="opRf('${c.id}')">Refazer</button>`}${R.cd?`<button class="bde" onclick="dlCard('${c.id}')">&#10005;</button>`:''}</div>`;
+      div.innerHTML=`<div class="cos">${hl(c.os,srch)}</div><div class="cp">${hl(c.ped,srch)}</div>${U&&U.un==='central'&&c.unidade?`<div class="cg" style="font-size:10px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:.05em">${c.unidade}</div>`:''}${c.refeito?`<div class="cg" style="color:#DC2626;font-weight:700;font-size:11px">SERVIÇO REFEITO</div>`:''}${c.dtVenda?`<div class="cg" style="color:var(--v);font-weight:500">Venda: ${c.dtVenda.split('-').reverse().join('/')}</div>`:''}${c.prazo?`<div class="cg" style="color:${c.urgente?'#DC2626':'var(--mu)'};font-weight:${c.urgente?'700':'500'}">${c.urgente?' URGENTE':''} Entrega: ${c.prazo.split('-').reverse().join('/')}</div>`:''}${c.obs?`<div class="cg" style="color:var(--wa);font-style:italic">${c.obs}${c.receita?' · '+c.receita:''}</div>`:''}${c.lab?`<div class="cg" style="color:var(--mu)">Lab: ${c.lab}</div>`:''}${c.obsmv?`<div class="cg" style="color:var(--mu);font-style:italic">${c.obsmv}</div>`:''}${c.osCompra?`<div class="cg" style="color:var(--mu)">OS Compra: ${c.osCompra}</div>`:''}${c.respGar?`<div class="cg" style="color:var(--mu)">Resp: ${c.respGar}</div>`:''}${c.obsTxt?`<div class="cg" style="color:var(--mu);font-style:italic">${c.obsTxt}</div>`:''}${c.esfOD!=null?`<div class="cg">OD ${fG(c.esfOD,c.cilOD)} · OE ${fG(c.esfOE,c.cilOE)}</div>`:''}<div class="cm"><span class="bg2 ${tGC(c.tipo)}">${tGL(c.tipo)}</span><span class="tm ${tc}">${ft(h)}</span></div><div class="cu">por ${lu}</div><div class="cac">${cm?`<button class="bn" onclick="mvCard('${c.id}')">${nl}</button>`:''}${ci===5?`<button class="bn" disabled>Concluído</button>`:''}<button class="bh" onclick="opH('${c.id}')">&#9776;</button>${`<button class="bde" style="background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;font-size:11px;padding:4px 8px;border-radius:6px;cursor:pointer" onclick="opRf('${c.id}')">Refazer</button>`}${R.cd?`<button class="bde" onclick="dlCard('${c.id}')">&#10005;</button>`:''}</div>`;
       col.appendChild(div);
     });
 
@@ -908,7 +929,7 @@ function expEstCSV(){
   const b=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='estoque.csv';a.click();URL.revokeObjectURL(u);
 }
 
-['om','hm','em2','rfm'].forEach(id=>{document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.style.display='none';});});
+['om','hm','em2','rfm','labm'].forEach(id=>{document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.style.display='none';});});
 document.getElementById('si').addEventListener('keydown',e=>{if(e.key==='Escape')clrSrch();});
 setInterval(()=>{if(U)loadData();},30000);
 </script>
