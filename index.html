@@ -246,6 +246,7 @@ tbody tr:hover{background:var(--bg);}
         <button class="tab" id="t-r" onclick="sw('r')">Montagem</button>
         <button class="tab" id="t-g" onclick="sw('g')">Garantias</button>
         <button class="tab" id="t-r2" onclick="sw('r2')">Refeitos</button>
+        <button class="tab" id="t-pz" onclick="sw('pz')">Prazos</button>
         <button class="tab" id="t-e" onclick="sw('e')" style="display:none">Estoque</button>
       </div>
       <div class="av" id="av"></div>
@@ -375,6 +376,32 @@ tbody tr:hover{background:var(--bg);}
     <div class="tw">
       <div class="th2"><span class="tt" id="r2tt">Refeitos de hoje</span><button class="bex" onclick="expRefCSV()">Exportar CSV</button></div>
       <div id="r2b"><div class="er">Nenhum refeito neste período.</div></div>
+    </div>
+  </div>
+
+  <div id="pzs" class="rm" style="display:none">
+    <div class="rh">
+      <span class="rt">Prazos de Entrega</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--mu);font-weight:500">Mostrando OS com prazo nos próximos</span>
+        <select id="pz-dias" onchange="rnPrazos()" style="font-size:12px;padding:5px 10px;border:1.5px solid var(--bo);border-radius:8px;background:var(--w);color:var(--tx);font-family:inherit;outline:none;cursor:pointer">
+          <option value="4" selected>4 dias</option>
+          <option value="7">7 dias</option>
+          <option value="10">10 dias</option>
+          <option value="15">15 dias</option>
+        </select>
+      </div>
+    </div>
+    <div class="rsum">
+      <div class="rs2"><div class="rl">Total no prazo</div><div class="rv d" id="pz0">0</div></div>
+      <div class="rs2"><div class="rl">Vencendo hoje</div><div class="rv d" id="pz1">0</div></div>
+      <div class="rs2"><div class="rl">Vencendo amanhã</div><div class="rv w" id="pz2">0</div></div>
+      <div class="rs2"><div class="rl">Próximos dias</div><div class="rv i" id="pz3">0</div></div>
+      <div class="rs2"><div class="rl">Atrasadas</div><div class="rv d" id="pz4">0</div></div>
+    </div>
+    <div class="tw">
+      <div class="th2"><span class="tt">Ordenado por prazo mais próximo</span><button class="bex" onclick="expPrazosCSV()">Exportar CSV</button></div>
+      <div id="pzb"><div class="er">Carregando...</div></div>
     </div>
   </div>
 
@@ -622,14 +649,14 @@ function doLogout(){
 
 // ── TABS ──────────────────────────────────────────
 function sw(tab){
-  const map={k:'ks',r:'rs',g:'gs',r2:'r2s',e:'es'};
+  const map={k:'ks',r:'rs',g:'gs',r2:'r2s',pz:'pzs',e:'es'};
   // Primeiro esconde tudo
   Object.values(map).forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.style.display='none';
   });
   // Atualiza abas
-  ['k','r','g','r2','e'].forEach(t=>{
+  ['k','r','g','r2','pz','e'].forEach(t=>{
     const tb=document.getElementById('t-'+t);
     if(tb)tb.className='tab'+(tab===t?' active':'');
   });
@@ -642,6 +669,7 @@ function sw(tab){
   if(tab==='r')rnRel();
   if(tab==='g')rnGar();
   if(tab==='r2')rnRef();
+  if(tab==='pz')rnPrazos();
   if(tab==='e')rnEst();
 }
 
@@ -998,6 +1026,77 @@ function expRefCSV(){
   if(!refR.length){alert('Nenhum dado.');return;}
   const csv=['OS,Pedido,Tipo,Dt.Venda,OD.Esf,OD.Cil,OE.Esf,OE.Cil,Lab,Motivo,Refeito.Por,Data',...refR.map(r=>[r.os,r.ped,tGL(r.tipo),r.dtVenda,r.esfOD,r.cilOD,r.esfOE,r.cilOE,r.lab,r.motivo,r.u,fd(r.at)].join(','))].join('\n');
   const b=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='refeitos.csv';a.click();URL.revokeObjectURL(u);
+}
+
+let prazosData=[];
+
+function rnPrazos(){
+  const dias=parseInt(document.getElementById('pz-dias').value)||4;
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const limite=new Date(hoje);limite.setDate(hoje.getDate()+dias);
+  const amanha=new Date(hoje);amanha.setDate(hoje.getDate()+1);
+
+  // Pega só OS que não foram avisadas/entregues (col < 4)
+  prazosData=[];
+  ST.cards.forEach(c=>{
+    if(!c.prazo||c.col>=4)return;
+    const dp=new Date(c.prazo+'T00:00:00');
+    // Inclui atrasadas + dentro do limite
+    if(dp<=limite){
+      const diffMs=dp-hoje;
+      const diffDias=Math.ceil(diffMs/(1000*60*60*24));
+      prazosData.push({...c,_dp:dp,_diff:diffDias});
+    }
+  });
+
+  // Ordena prazo mais próximo primeiro (atrasadas primeiro)
+  prazosData.sort((a,b)=>a._dp-b._dp);
+
+  const cols=['Pedido','Ag. montagem','Em montagem','Pronto','Avisado','Entregue'];
+  document.getElementById('pz0').textContent=prazosData.length;
+  document.getElementById('pz1').textContent=prazosData.filter(c=>c._diff===0).length;
+  document.getElementById('pz2').textContent=prazosData.filter(c=>c._diff===1).length;
+  document.getElementById('pz3').textContent=prazosData.filter(c=>c._diff>1).length;
+  document.getElementById('pz4').textContent=prazosData.filter(c=>c._diff<0).length;
+
+  const b=document.getElementById('pzb');
+  if(!prazosData.length){b.innerHTML='<div class="er">Nenhuma OS com prazo nos próximos '+dias+' dias.</div>';return;}
+
+  b.innerHTML=`<table><thead><tr>
+    <th>#</th><th>OS</th><th>Pedido</th><th>Tipo</th><th>Data Venda</th>
+    <th>Prazo Entrega</th><th>Situação</th><th>Coluna</th><th>Urgente</th><th>Lançado por</th>
+  </tr></thead><tbody>${prazosData.map((c,i)=>{
+    const prazoFmt=c.prazo.split('-').reverse().join('/');
+    const vendaFmt=c.dtVenda?c.dtVenda.split('-').reverse().join('/'):'—';
+    let sit='',sitStyle='';
+    if(c._diff<0){sit='ATRASADA '+Math.abs(c._diff)+'d';sitStyle='background:#FEF2F2;color:#DC2626;font-weight:700';}
+    else if(c._diff===0){sit='VENCE HOJE';sitStyle='background:#FEF2F2;color:#DC2626;font-weight:700';}
+    else if(c._diff===1){sit='VENCE AMANHÃ';sitStyle='background:#FFFBEB;color:#92400E;font-weight:700';}
+    else{sit='Em '+c._diff+' dias';sitStyle='background:#E0F7F6;color:#0D7A75;font-weight:600';}
+    const urg=c.urgente?'<span style="font-size:10px;padding:2px 8px;border-radius:6px;background:#FEF2F2;color:#DC2626;font-weight:700">URGENTE</span>':'—';
+    return`<tr>
+      <td style="color:var(--mu);font-size:11px">${i+1}</td>
+      <td style="font-weight:800;font-size:13px">${c.os}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${c.ped||'—'}</td>
+      <td><span style="font-size:10px;padding:2px 8px;border-radius:6px;font-weight:700" class="${tGC(c.tipo)}">${tGL(c.tipo)}</span></td>
+      <td style="color:var(--mu)">${vendaFmt}</td>
+      <td style="font-weight:700">${prazoFmt}</td>
+      <td><span style="font-size:11px;padding:3px 10px;border-radius:8px;${sitStyle}">${sit}</span></td>
+      <td><span style="font-size:10px;padding:2px 8px;border-radius:6px;background:var(--bg);border:1px solid var(--bo)">${cols[c.col]||'—'}</span></td>
+      <td>${urg}</td>
+      <td style="color:var(--mu)">${c.history&&c.history[0]?c.history[0].u:'—'}</td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+function expPrazosCSV(){
+  if(!prazosData.length){alert('Nenhum dado.');return;}
+  const cols=['Pedido','Ag. montagem','Em montagem','Pronto','Avisado','Entregue'];
+  const csv=['OS,Pedido,Tipo,Dt.Venda,Prazo,Situacao,Coluna,Urgente',...prazosData.map(c=>{
+    const sit=c._diff<0?'ATRASADA '+Math.abs(c._diff)+'d':c._diff===0?'VENCE HOJE':c._diff===1?'VENCE AMANHA':'Em '+c._diff+' dias';
+    return[c.os,c.ped||'',tGL(c.tipo),c.dtVenda||'',c.prazo,sit,cols[c.col]||'',c.urgente?'SIM':'NÃO'].join(',');
+  })].join('\n');
+  const b=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='prazos.csv';a.click();URL.revokeObjectURL(u);
 }
 
 function setPer(p){
