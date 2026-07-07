@@ -764,9 +764,16 @@ async function mvCardExec(id,lab,obsmv){
       if(!ST.estoque[k])ST.estoque[k]={esf:e,cil:cl,qty:0};
       if(ST.estoque[k].qty>0){
         ST.estoque[k].qty--;
-        try{await fbSet(`estoque/${k}`,ST.estoque[k]);}catch(err){console.error('Erro baixa estoque:',err);}
+        try{
+          await fbSet(`estoque/${k}`,ST.estoque[k]);
+          // Recarrega estoque do Firebase para garantir sincronia
+          const updated=await fbGet(`estoque/${k}`);
+          if(updated)ST.estoque[k]=updated;
+        }catch(err){console.error('Erro baixa estoque:',err);}
       }
     }
+    // Atualiza tela do estoque se estiver aberta
+    if(document.getElementById('es')&&document.getElementById('es').style.display!=='none')rnEst();
   }
   rnKan();
   await saveCard(c);
